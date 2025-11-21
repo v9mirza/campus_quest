@@ -120,7 +120,7 @@ await sendEmail(
 submitQuiz: async (req, res) => {
     try {
         const { quizId } = req.params;
-        const studentId = req.user.id;  // FIXED
+        const studentId = req.user.id;  
         const { answers } = req.body;
 
         const quizToAttempt = await Quiz.findById(quizId);
@@ -132,7 +132,6 @@ submitQuiz: async (req, res) => {
         let wrongCount = 0;
         let totalMarksObtained = 0;
 
-        // Checking answers
         quizToAttempt.questions.forEach((question) => {
             const studentAnswer = answers.find(
                 ans => ans.questionId === question._id.toString()
@@ -149,7 +148,6 @@ submitQuiz: async (req, res) => {
             }
         });
 
-        // ⭐ SAVE ATTEMPT IN DATABASE
         const savedAttempt = await QuizAttempt.create({
             quiz: quizId,
             student: studentId,
@@ -176,4 +174,5 @@ submitQuiz: async (req, res) => {
     }
 }
 };
+
 module.exports = QuizCtrl;
