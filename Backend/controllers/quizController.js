@@ -2,7 +2,7 @@ const Quiz = require('../models/quizModel');
 const Student = require('../models/studentModel');
 const sendEmail = require('../utils/sendEmail');
 const Leaderboard = require('../models/leaderboardModel');
-const QuizAttempt = require('../models/attemptedQuiz');
+const QuizAttempt = require('../models/QuizAttemptModel');
 
 
 const QuizCtrl = {
@@ -158,6 +158,7 @@ const QuizCtrl = {
                 totalMarks: totalMarksObtained,
                 timeTaken: timeTaken,
             });
+            savedAttempt.save();
             const leaderboard = await Leaderboard.create(
                 { quizId:quizId, userId:studentId },
                 { score:totalMarksObtained, timeTaken:timeTaken },
@@ -170,10 +171,6 @@ const QuizCtrl = {
             await leaderboard.save();
             return res.status(200).json({
                 message: "Quiz submitted successfully",
-                correctCount,
-                wrongCount,
-                totalMarksObtained,
-                attemptId: savedAttempt._id
             });
         } catch (error) {
             console.error(error);
