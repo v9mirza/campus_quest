@@ -1,3 +1,4 @@
+const { get } = require('mongoose');
 const Feedback = require('../models/feedbackModel');
 const feedbackController = {
     submitFeedback: async (req, res) => {
@@ -13,6 +14,14 @@ const userId = req.user.id;
             res.status(201).json({ message: 'Feedback submitted successfully', feedback: newFeedback });
         } catch (error) {
             res.status(500).json({ message: 'Error submitting feedback', error: error.message });
+        }   
+    },
+    getAllFeedbacks: async (req, res) => {
+        try {
+            const feedbacks = await Feedback.find().populate('userId', 'name enrollmentNumber');
+            res.status(200).json(feedbacks);
+        } catch (error) {
+            res.status(500).json({ message: 'Error fetching feedbacks', error: error.message });
         }   
     }
 };

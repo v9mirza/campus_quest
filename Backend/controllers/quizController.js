@@ -4,6 +4,7 @@ const sendEmail = require('../utils/sendEmail');
 const Leaderboard = require('../models/leaderboardModel');
 const QuizAttempt = require('../models/attemptedQuiz');
 
+
 const QuizCtrl = {
     createQuiz: async (req, res) => {
         try {
@@ -161,6 +162,11 @@ const QuizCtrl = {
                 { quizId:quizId, userId:studentId },
                 { score:totalMarksObtained, timeTaken:timeTaken },
             );
+            io.to(quizId).emit('leaderboardUpdate', {
+                userId: studentId,
+                score: totalMarksObtained,
+                timeTaken: timeTaken
+            });
             await leaderboard.save();
             return res.status(200).json({
                 message: "Quiz submitted successfully",

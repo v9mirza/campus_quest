@@ -8,7 +8,7 @@ const leaderboardSchema = new mongoose.Schema({
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'students',
+        ref: 'Student',
         required: true,
     },
     score: {

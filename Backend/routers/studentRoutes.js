@@ -26,5 +26,7 @@ router.delete("/:id", studentController.deleteStudent);
 
 // submit feedback
 router.post("/feedback", feedbackController.submitFeedback);
+// get all feedbacks
+router.get("/all-feedbacks", feedbackController.getAllFeedbacks);
 
 module.exports = router;

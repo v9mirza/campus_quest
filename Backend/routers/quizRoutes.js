@@ -18,6 +18,6 @@ router.post('/:quizId/register-student', quizController.registerStudentForQuiz);
 
 router.get('/department/:departmentName', quizController.getQuizzesByDepartment);
 
-router.post('/submit/:quizId', quizController.submitQuiz);
+router.post('/:quizId/submit', quizController.submitQuiz);
 
 module.exports = router;
