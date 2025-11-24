@@ -64,7 +64,7 @@ app.use("/students", studentRoutes);
 app.use("/quiz", quizRoutes);
 app.use("/api/faculty", facultyRoutes);
 app.use("/api/superadmin", superAdminRoutes);
-app.use("/api/courses", courseRoutes); // (Don't delete)
+app.use("/api/course", courseRoutes); // (Don't delete)
 
 // -------------------------------------
 // MONGO DB CONNECTION
