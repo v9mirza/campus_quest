@@ -1,107 +1,146 @@
-const Course = require('../models/CourseModel');
+const Course = require("../models/CourseModel");
 
-function normalizeInput({ department, courseName, year, groups }) {
-  const dept = department ? String(department).trim() : '';
-  const course = courseName ? String(courseName).trim() : '';
-  const yr = Number(year);
-
-  const normalizedGroups = Array.isArray(groups)
-    ? groups
-        .map(g => String(g).trim())
-        .filter(g => g.length > 0)
-    : [];
-
-  return { dept, course, yr, normalizedGroups };
+function normalizeInput(data) {
+  return {
+    courseType: data.courseType ? String(data.courseType).trim() : "",
+    department: data.department ? String(data.department).trim() : "",
+    courseName: data.courseName ? String(data.courseName).trim() : "",
+    year: Number(data.year),
+    groups: Array.isArray(data.groups)
+      ? data.groups.map(g => String(g).trim()).filter(Boolean)
+      : [],
+    createdBy: data.createdBy
+  };
 }
 
-// CREATE or MERGE course
+/***********************************
+ * CREATE or MERGE Course (Departmental/Global)
+ ***********************************/
 exports.createOrMergeCourse = async (req, res) => {
   try {
-    const { department, courseName, year, groups, createdBy } = req.body;
+    const { courseType, department, courseName, year, groups, createdBy } =
+      normalizeInput(req.body);
 
-    if (!department || !courseName || !year || !groups || !createdBy) {
-      return res.status(400).json({ message: 'department, courseName, year, groups and createdBy are required.' });
+    // 1) Base validation
+    if (!courseType || !courseName || !year || !createdBy) {
+      return res.status(400).json({
+        message:
+          "courseType, courseName, year, and createdBy are required fields."
+      });
     }
 
-    const { dept, course, yr, normalizedGroups } = normalizeInput({ department, courseName, year, groups });
-
-    if (!dept || !course || !yr || normalizedGroups.length === 0) {
-      return res.status(400).json({ message: 'Invalid input after normalization.' });
+    // 2) Check valid courseType
+    if (!["departmental", "global"].includes(courseType)) {
+      return res
+        .status(400)
+        .json({ message: "courseType must be 'departmental' or 'global'." });
     }
 
-    const filter = { department: dept, courseName: course, year: yr };
+    // 3) Mode-based validations
+    if (courseType === "departmental") {
+      if (!department)
+        return res
+          .status(400)
+          .json({ message: "department is required for departmental courses." });
 
-    // Add sorted groups
-    const updated = await Course.findOneAndUpdate(
-      filter,
-      { 
-        $addToSet: { groups: { $each: normalizedGroups } } 
-      },
-      { new: true }
-    );
+      if (!groups.length)
+        return res.status(400).json({
+          message: "Groups are required for departmental courses."
+        });
+    }
+
+    // Filter based on type
+    const filter =
+      courseType === "departmental"
+        ? { courseType, department, courseName, year }
+        : { courseType, courseName, year };
+
+    // Update for departmental
+    const update =
+      courseType === "departmental"
+        ? { $addToSet: { groups: { $each: groups } } }
+        : {}; // global has no groups to merge
+
+    const updated = await Course.findOneAndUpdate(filter, update, {
+      new: true
+    });
 
     if (updated) {
-      // Ensure groups stay sorted
-      updated.groups = updated.groups.sort();
-      await updated.save();
-
       return res.status(200).json({
-        message: 'Existing course updated with new groups (if any).',
+        message: "Existing course updated (merged groups if departmental).",
         course: updated
       });
     }
 
     // Create new course
-    const created = await Course.create({
-      department: dept,
-      courseName: course,
-      year: yr,
-      groups: normalizedGroups.sort(),
-      createdBy
-    });
+    const createData =
+      courseType === "departmental"
+        ? { courseType, department, courseName, year, groups, createdBy }
+        : { courseType, courseName, year, createdBy };
 
-    return res.status(201).json({ message: 'New course created successfully.', course: created });
+    const created = await Course.create(createData);
 
+    return res
+      .status(201)
+      .json({ message: "New course created successfully.", course: created });
   } catch (err) {
-    if (err && err.code === 11000) {
+    // Handle unique index race-case
+    if (err.code === 11000) {
       try {
-        const { department, courseName, year, groups } = req.body;
-        const { dept, course, yr, normalizedGroups } = normalizeInput({ department, courseName, year, groups });
+        const { courseType, department, courseName, year, groups } =
+          normalizeInput(req.body);
 
-        const merged = await Course.findOneAndUpdate(
-          { department: dept, courseName: course, year: yr },
-          { $addToSet: { groups: { $each: normalizedGroups } } },
-          { new: true }
-        );
+        const filter =
+          courseType === "departmental"
+            ? { courseType, department, courseName, year }
+            : { courseType, courseName, year };
 
-        merged.groups = merged.groups.sort();
-        await merged.save();
+        const merge =
+          courseType === "departmental"
+            ? { $addToSet: { groups: { $each: groups } } }
+            : {};
+
+        const merged = await Course.findOneAndUpdate(filter, merge, {
+          new: true
+        });
 
         return res.status(200).json({
-          message: 'Race condition: existing course updated with new groups.',
+          message: "Race condition: existing course updated.",
           course: merged
         });
-      } catch (e2) {
-        return res.status(500).json({ error: e2.message });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
       }
     }
-    return res.status(400).json({ error: err.message });
+
+    return res.status(500).json({ error: err.message });
   }
 };
 
-// GET all courses — now uses lean()
+/***********************************
+ * GET ALL COURSES (Filtered)
+ ***********************************/
 exports.getAllCourses = async (req, res) => {
   try {
-    const { department, courseName, year } = req.query;
     const filter = {};
 
-    if (department) filter.department = String(department).trim();
-    if (courseName) filter.courseName = String(courseName).trim();
-    if (year) filter.year = Number(year);
+    if (req.query.courseType)
+      filter.courseType = String(req.query.courseType).trim();
 
-    const courses = await Course.find(filter)
-      .sort({ department: 1, courseName: 1, year: 1 })
-      .lean();
+    if (req.query.department)
+      filter.department = String(req.query.department).trim();
+
+    if (req.query.courseName)
+      filter.courseName = String(req.query.courseName).trim();
+
+    if (req.query.year) filter.year = Number(req.query.year);
+
+    const courses = await Course.find(filter).sort({
+      courseType: 1,
+      department: 1,
+      courseName: 1,
+      year: 1
+    });
 
     return res.status(200).json({ total: courses.length, courses });
   } catch (err) {
@@ -109,47 +148,61 @@ exports.getAllCourses = async (req, res) => {
   }
 };
 
+/***********************************
+ * GET ONE Course
+ ***********************************/
 exports.getCourseById = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id).lean();
-    if (!course) return res.status(404).json({ message: 'Course not found.' });
+    const course = await Course.findById(req.params.id);
+    if (!course)
+      return res.status(404).json({ message: "Course not found." });
+
     return res.status(200).json(course);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 };
 
+/***********************************
+ * UPDATE Course
+ ***********************************/
 exports.updateCourse = async (req, res) => {
   try {
-    if (req.body.department) req.body.department = String(req.body.department).trim();
-    if (req.body.courseName) req.body.courseName = String(req.body.courseName).trim();
-    if (req.body.year) req.body.year = Number(req.body.year);
-    if (Array.isArray(req.body.groups)) {
-      req.body.groups = req.body.groups.map(g => String(g).trim()).filter(Boolean).sort();
-    }
+    const body = normalizeInput(req.body);
 
     const updated = await Course.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      body,
       { new: true, runValidators: true }
     );
 
-    if (!updated) return res.status(404).json({ message: 'Course not found.' });
+    if (!updated)
+      return res.status(404).json({ message: "Course not found." });
 
-    return res.status(200).json({ message: 'Course updated.', course: updated });
+    return res.status(200).json({
+      message: "Course updated successfully.",
+      course: updated
+    });
   } catch (err) {
-    if (err && err.code === 11000) {
-      return res.status(400).json({ message: 'Update would create duplicate course (department+courseName+year must be unique).' });
+    if (err.code === 11000) {
+      return res.status(400).json({
+        message: "Update would create a duplicate course."
+      });
     }
-    return res.status(400).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
 
+/***********************************
+ * DELETE Course
+ ***********************************/
 exports.deleteCourse = async (req, res) => {
   try {
     const deleted = await Course.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Course not found.' });
-    return res.status(200).json({ message: 'Course deleted.' });
+    if (!deleted)
+      return res.status(404).json({ message: "Course not found." });
+
+    return res.status(200).json({ message: "Course deleted." });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
