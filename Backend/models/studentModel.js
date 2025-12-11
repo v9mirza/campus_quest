@@ -15,6 +15,12 @@ const studentSchema = new mongoose.Schema({
         trim: true
     },
 
+    gender: {
+        type: String,
+        enum: ["Male", "Female", "Other"],
+        required: true
+    },
+
     email: {
         type: String,
         required: true,
@@ -37,7 +43,6 @@ const studentSchema = new mongoose.Schema({
         trim: true
     },
 
-    // Instead of section -> course + group (correct for your system)
     course: {
         type: String,        // Example: "BCA", "BBA", "B.Tech"
         required: true,
