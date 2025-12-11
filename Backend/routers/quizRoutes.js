@@ -20,4 +20,6 @@ router.get('/department/:departmentName', quizController.getQuizzesByDepartment)
 
 router.post('/:quizId/submit', quizController.submitQuiz);
 
+router.get('/:quizId/start', quizController.QuizAttempt);
+
 module.exports = router;

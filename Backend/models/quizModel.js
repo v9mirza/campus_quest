@@ -15,19 +15,15 @@ const quizSchema = new mongoose.Schema({
     },
     course: {
         type: [String],
-        required: true,
     },
     yr:{
         type:[String],
-        required: true,
     },
     group:{
       type:[String],
-        required: true,
     },
     department: {
         type: String,
-        required: true,
     },
     questions: [
         {
@@ -52,11 +48,14 @@ const quizSchema = new mongoose.Schema({
             },
             negativeMarks: {
                 type: Number,
-                required: true,
                 default: 0,
             }
         }
     ],
+    passingMarks: {
+        type: Number,
+        required: true,
+    },
     totalMarks: {
         type: Number,
         required: true,

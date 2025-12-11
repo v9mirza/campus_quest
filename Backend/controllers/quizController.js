@@ -9,7 +9,6 @@ const QuizCtrl = {
     createQuiz: async (req, res) => {
         try {
             const { title, subject, course, yr, group, description, department, questions, totalMarks, startTime, endTime, durationMinutes } = req.body;
-            department.toUpperCase();
             const newQuiz = new Quiz({
                 title,
                 subject,
@@ -67,7 +66,7 @@ const QuizCtrl = {
             res.status(500).json({ message: 'Error fetching quiz', error: error.message });
         }
     },
-
+    
     updateQuizById: async (req, res) => {
         try {
             const { quizId } = req.params;
@@ -96,7 +95,7 @@ const QuizCtrl = {
     registerStudentForQuiz: async (req, res) => {
         try {
             const { quizId } = req.params;
-            const { studentId } = req.user.id;
+            const  studentId = req.user.id;
             const quizToUpdate = await Quiz.findById(quizId);
             if (!quizToUpdate) {
                 return res.status(404).json({ message: 'Quiz not found' });
@@ -121,6 +120,27 @@ const QuizCtrl = {
             res.status(500).json({ message: 'Error fetching quizzes by department', error: error.message });
         }
     },
+    QuizAttempt:async(req,res)=>{
+        try{
+            const { quizId } = req.params;
+            const studentId = req.user.id;
+            const quiz = await Quiz.findById(quizId);
+            if (!quiz) {
+                return res.status(404).json({ message: 'Quiz not found' });
+            }
+           const registered = quiz.registeredStudents.includes(studentId);
+            if (!registered) {
+                return res.status(403).json({ message: 'Student not registered for this quiz' });
+            }
+            const now= Date.now();
+            if(now<quiz.startTime || now>quiz.endTime){
+                return res.status(403).json({ message: 'Quiz not active currently' });
+            }
+            res.status(200).json(quiz);
+        } catch (error) {
+            res.status(500).json({ message: 'Error attempting quiz', error: error.message });
+        }   
+        },
     submitQuiz: async (req, res) => {
         try {
             const { quizId } = req.params;
@@ -158,11 +178,13 @@ const QuizCtrl = {
                 totalMarks: totalMarksObtained,
                 timeTaken: timeTaken,
             });
-            savedAttempt.save();
-            const leaderboard = await Leaderboard.create(
-                { quizId:quizId, userId:studentId },
-                { score:totalMarksObtained, timeTaken:timeTaken },
-            );
+            const leaderboard = await Leaderboard.create({
+    quizId,
+    userId: studentId,
+    score: totalMarksObtained,
+    timeTaken
+});
+
             io.to(quizId).emit('leaderboardUpdate', {
                 userId: studentId,
                 score: totalMarksObtained,

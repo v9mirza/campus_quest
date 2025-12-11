@@ -10,7 +10,6 @@ const leaderboardController = {
                 .sort({ score: -1, timeTaken: 1 });
 io.to(quizId).emit('leaderboardData', leaderboardEntries);
             res.status(200).json(leaderboardEntries);
-
         }
         catch (error) {
             res.status(500).json({ message: 'Error fetching leaderboard', error: error.message });

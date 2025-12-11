@@ -25,7 +25,7 @@ const quizAttemptSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    totalMarks: {
+    scoredMarks: {
         type: Number,
         default: 0
     },
