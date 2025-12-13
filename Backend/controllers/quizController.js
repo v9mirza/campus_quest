@@ -3,12 +3,39 @@ const Student = require('../models/studentModel');
 const sendEmail = require('../utils/sendEmail');
 const Leaderboard = require('../models/leaderboardModel');
 const QuizAttempt = require('../models/QuizAttemptModel');
+const { io } = require('../server');
+const cloudinary = require('../config/cloudinary');
+
+
 
 
 const QuizCtrl = {
     createQuiz: async (req, res) => {
         try {
-            const { title, subject, course, yr, group, description, department, questions, totalMarks, startTime, endTime, durationMinutes } = req.body;
+            const { title, subject, course, yr, group, description, department, questions, passingMarks, totalMarks, startTime, endTime, durationMinutes } = req.body;
+            let parsedQuestions = JSON.parse(questions);
+            let fileMap = {};
+            req.files.forEach((file) => {
+                if (!fileMap[file.fieldname]) fileMap[file.fieldname] = [];
+                fileMap[file.fieldname].push(file);
+            });
+            for (let i = 0; i < parsedQuestions.length; i++) {
+                let key = `questionImages_${i}`;
+                let imageFiles = fileMap[key] || [];
+                let urls = [];
+                for (let file of imageFiles) {
+                    console.log("line 28 Uploading files:",file);
+                    const uploaded = await new Promise((resolve, reject) => {
+                        cloudinary.uploader.upload_stream({}, (err, result) => {
+                            if (err) reject(err);
+                            else resolve(result);
+                        }).end(file.buffer);
+                    });
+                    urls.push(uploaded.secure_url);
+                }
+                parsedQuestions[i].imageUrl = urls;
+                console.log(`Uploaded URLs for question ${i}:`, urls);
+            }
             const newQuiz = new Quiz({
                 title,
                 subject,
@@ -17,35 +44,56 @@ const QuizCtrl = {
                 group,
                 description,
                 department,
-                questions,
+                questions: parsedQuestions,
+                passingMarks,
                 totalMarks,
                 startTime,
                 endTime,
                 durationMinutes
             });
             await newQuiz.save();
-            const students = await Student.find({
-                course: { $in: course },
-                yr: { $in: yr },
-                group: { $in: group }
-            });
-            const emails = students.map(s => s.email);
-            await sendEmail(
-                emails,
-                'New Quiz Available',
-                `<h2>A new quiz titled "${title}" is available</h2>
+
+            let students;
+            if (!course && !yr && !group) {
+                students = await Student.find();
+                const emails = students.map(s => s.email);
+                await sendEmail(
+                    emails,
+                    'New Quiz Available',
+                    `<h2>A new quiz titled "${title}" is available</h2>
   <h2>subject: "${subject}"</h2>
    <p>Description: ${description}</p>
    <p>Start Time: ${new Date(startTime).toLocaleString()}</p>
    <p>End Time: ${new Date(endTime).toLocaleString()}</p> 
     <p>Duration: ${durationMinutes} minutes</p>
     `);
-            res.status(201).json({ message: 'Quiz created successfully', quiz: newQuiz });
+            }
+            else{
+                const query = {
+                    course: { $in: course },
+                    yr: { $in: yr },
+                };
+                if (group && group.length > 0) {
+                    query.group = { $in: group };
+                }
+                 students = await Student.find(query);
+                const emails = students.map(s => s.email);
+                await sendEmail(
+                    emails,
+                    'New Quiz Available',
+                    `<h2>A new quiz titled "${title}" is available</h2>
+  <h2>subject: "${subject}"</h2>
+   <p>Description: ${description}</p>
+   <p>Start Time: ${new Date(startTime).toLocaleString()}</p>
+   <p>End Time: ${new Date(endTime).toLocaleString()}</p> 
+    <p>Duration: ${durationMinutes} minutes</p>
+    `);
+            }
+         res.status(201).json({ message: 'Quiz created successfully', quiz: newQuiz });
         } catch (error) {
             res.status(500).json({ message: 'Error creating quiz', error: error.message });
         }
     },
-
     getAllQuizzes: async (req, res) => {
         try {
             const quizzes = await Quiz.find();
@@ -66,7 +114,7 @@ const QuizCtrl = {
             res.status(500).json({ message: 'Error fetching quiz', error: error.message });
         }
     },
-    
+
     updateQuizById: async (req, res) => {
         try {
             const { quizId } = req.params;
@@ -95,7 +143,7 @@ const QuizCtrl = {
     registerStudentForQuiz: async (req, res) => {
         try {
             const { quizId } = req.params;
-            const  studentId = req.user.id;
+            const studentId = req.user.id;
             const quizToUpdate = await Quiz.findById(quizId);
             if (!quizToUpdate) {
                 return res.status(404).json({ message: 'Quiz not found' });
@@ -120,27 +168,27 @@ const QuizCtrl = {
             res.status(500).json({ message: 'Error fetching quizzes by department', error: error.message });
         }
     },
-    QuizAttempt:async(req,res)=>{
-        try{
+    QuizAttempt: async (req, res) => {
+        try {
             const { quizId } = req.params;
             const studentId = req.user.id;
             const quiz = await Quiz.findById(quizId);
             if (!quiz) {
                 return res.status(404).json({ message: 'Quiz not found' });
             }
-           const registered = quiz.registeredStudents.includes(studentId);
+            const registered = quiz.registeredStudents.includes(studentId);
             if (!registered) {
                 return res.status(403).json({ message: 'Student not registered for this quiz' });
             }
-            const now= Date.now();
-            if(now<quiz.startTime || now>quiz.endTime){
+            const now = Date.now();
+            if (now < quiz.startTime || now > quiz.endTime) {
                 return res.status(403).json({ message: 'Quiz not active currently' });
             }
             res.status(200).json(quiz);
         } catch (error) {
             res.status(500).json({ message: 'Error attempting quiz', error: error.message });
-        }   
-        },
+        }
+    },
     submitQuiz: async (req, res) => {
         try {
             const { quizId } = req.params;
@@ -179,11 +227,11 @@ const QuizCtrl = {
                 timeTaken: timeTaken,
             });
             const leaderboard = await Leaderboard.create({
-    quizId,
-    userId: studentId,
-    score: totalMarksObtained,
-    timeTaken
-});
+                quizId,
+                userId: studentId,
+                score: totalMarksObtained,
+                timeTaken
+            });
 
             io.to(quizId).emit('leaderboardUpdate', {
                 userId: studentId,

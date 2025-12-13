@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
@@ -14,7 +15,7 @@ const courseRoutes = require('./routers/courseRoutes');
 //Importing HTTP and creating server 
 const http = require("http");
 const server = http.createServer(app);
-require('dotenv').config();
+
 
 //Port 
 const PORT = process.env.PORT || 3000;

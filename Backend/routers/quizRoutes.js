@@ -1,10 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const quizController = require('../controllers/quizController');
+const multer = require('multer');
 
 
+const upload = multer({
+ storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 1 * 1024 * 1024 
+  }
+});
 
-router.post('/create-quiz', quizController.createQuiz);
+router.post('/create-quiz',upload.any(), quizController.createQuiz);
 
 router.get('/all-quizzes', quizController.getAllQuizzes);
 
