@@ -1,5 +1,3 @@
-
-
 // http://localhost:3000/api/superadmin/register
 
 
@@ -20,35 +18,14 @@
 const SuperAdmin = require("../models/superAdminModel");
 const bcrypt = require("bcryptjs");
 
-// ID Generator
-function generateSuperAdminId(department) {
-  const deptCode = department
-    .split(" ")
-    .map(word => word[0])
-    .join("")
-    .toUpperCase();
-
-  const year = new Date().getFullYear();
-
-  // Generate 8-character alphanumeric string
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let randomStr = "";
-  for (let i = 0; i < 8; i++) {
-    randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-
-  return `${deptCode}-SUP-${year}-${randomStr}`;
-}
 
 
-/* =========================
-   REGISTER SUPER ADMIN
-   =========================*/
 exports.registerSuperAdmin = async (req, res) => {
   try {
-    const { name, email, password, department } = req.body;
+    const { name,facultyId, email, password, department } = req.body;
+    console.log(req.body);
 
-    if (!name || !email || !password || !department) {
+    if (!name || !email || !password || !department || !facultyId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
@@ -63,6 +40,7 @@ exports.registerSuperAdmin = async (req, res) => {
     const admin = new SuperAdmin({
       superAdminId: generatedId,
       name,
+      facultyId,
       email,
       password: hashedPassword,
       department
@@ -72,7 +50,10 @@ exports.registerSuperAdmin = async (req, res) => {
 
     return res.status(201).json({
       message: "Super Admin registered successfully.",
-      superAdminId: generatedId
+      facultyId: admin.facultyId,
+      name: admin.name,
+      email: admin.email,
+      department: admin.department 
     });
 
   } catch (error) {
@@ -81,18 +62,15 @@ exports.registerSuperAdmin = async (req, res) => {
 };
 
 
-/* =========================
-   LOGIN SUPER ADMIN
-   =========================*/
 exports.loginSuperAdmin = async (req, res) => {
   try {
-    const { superAdminId, password } = req.body;
+    const { facultyId, password } = req.body;
 
-    if (!superAdminId || !password) {
+    if (!facultyId || !password) {
       return res.status(400).json({ message: "ID and Password required." });
     }
 
-    const admin = await SuperAdmin.findOne({ superAdminId });
+    const admin = await SuperAdmin.findOne({ facultyId });
     if (!admin) {
       return res.status(400).json({ message: "Invalid ID." });
     }
@@ -105,7 +83,7 @@ exports.loginSuperAdmin = async (req, res) => {
     return res.status(200).json({
       message: "Login successful.",
       admin: {
-        superAdminId: admin.superAdminId,
+        facultyId: admin.facultyId,
         name: admin.name,
         email: admin.email,
         department: admin.department

@@ -1,67 +1,42 @@
 const mongoose = require('mongoose');
-const { Schema } = mongoose;
 
-const SuperAdminSchema = new Schema(
-  {
-    // Auto-generated ID (not filled from form)
-    superAdminId: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true
+const superAdminSchema = new mongoose.Schema({
+    username: {
+        type: String,
+        required: true,
     },
-
-    name: {
-      type: String,
-      required: true,
-      trim: true
+    facultyId: {
+        type: String,
+        required: true,
     },
-
     email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true
+        type: String,
+        required: true,
+        unique: true,
     },
-
-    password: {
-      type: String,
-      required: true
+    designation: {
+        type: String,
+        required: true,
     },
-
     department: {
-      type: String,
-      required: true,
-      trim: true
+        type: String,
+        required: true,
     },
-
-    role: {
-      type: String,
-      default: "superadmin",
-      enum: ["superadmin"]
+   departmentQuizzes: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Quiz',
+  }
+],
+    password: {
+        type: String,
+        required: true,
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
     }
+});
 
-// If you need to disable a HOD in future (soft delete)
-    // isActive: {
-    //   type: Boolean,
-    //   default: true
-    // }
-
-
-// For future: in case multiple universities or colleges support
-    
-    // instituteName: {
-    //   type: String,
-    //   default: null,
-    //   trim: true
-    // },
-
-
-  },
-  { timestamps: true }
-);
-
-SuperAdminSchema.index({ email: 1, department: 1 }, { unique: true });
-
-module.exports = mongoose.model("SuperAdmin", SuperAdminSchema);
+const SuperAdmin = mongoose.model('SuperAdmin', superAdminSchema);
+module.exports = SuperAdmin;

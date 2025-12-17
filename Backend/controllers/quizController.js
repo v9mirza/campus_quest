@@ -5,6 +5,10 @@ const Leaderboard = require('../models/leaderboardModel');
 const QuizAttempt = require('../models/QuizAttemptModel');
 const { io } = require('../server');
 const cloudinary = require('../config/cloudinary');
+const Faculty = require('../models/FacultyModel');
+const superAdmin = require('../models/superAdminModel');
+const generateCertificatePDF = require('../utils/generateCertificatePDF');
+const uploadCertificateToCloudinary = require('../utils/uploadCertificate');
 
 
 
@@ -13,7 +17,11 @@ const QuizCtrl = {
     createQuiz: async (req, res) => {
         try {
             const { title, subject, course, yr, group, description, department, questions, passingMarks, totalMarks, startTime, endTime, durationMinutes } = req.body;
-            let parsedQuestions = JSON.parse(questions);
+           let parsedQuestions = questions;
+      if (typeof questions === "string") {
+        parsedQuestions = JSON.parse(questions);
+      }
+            if(req.files && req.files.length > 0){
             let fileMap = {};
             req.files.forEach((file) => {
                 if (!fileMap[file.fieldname]) fileMap[file.fieldname] = [];
@@ -24,7 +32,6 @@ const QuizCtrl = {
                 let imageFiles = fileMap[key] || [];
                 let urls = [];
                 for (let file of imageFiles) {
-                    console.log("line 28 Uploading files:",file);
                     const uploaded = await new Promise((resolve, reject) => {
                         cloudinary.uploader.upload_stream({}, (err, result) => {
                             if (err) reject(err);
@@ -34,8 +41,8 @@ const QuizCtrl = {
                     urls.push(uploaded.secure_url);
                 }
                 parsedQuestions[i].imageUrl = urls;
-                console.log(`Uploaded URLs for question ${i}:`, urls);
             }
+        }
             const newQuiz = new Quiz({
                 title,
                 subject,
@@ -50,15 +57,16 @@ const QuizCtrl = {
                 startTime,
                 endTime,
                 durationMinutes,
-                createdBy: req.faculty.id,
+                createdBy:req.faculty.id,
             });
             await newQuiz.save();
+            console.log(req.faculty.id);    
             const facultyId = req.faculty.id;
             const newFacultyQuiz = await Faculty.findById(facultyId);
-            newFacultyQuiz.quizzes.push(newQuiz._id);
+            newFacultyQuiz.createdQuizzes.push(newQuiz._id);
             await newFacultyQuiz.save();
             const superAdminData = await superAdmin.findOne({ department: department });
-            superAdminData.quizzes.push(newQuiz._id);
+            superAdminData.departmentQuizzes.push(newQuiz._id);
             await superAdminData.save();
             let students;
             if (!course && !yr && !group) {
@@ -287,7 +295,44 @@ const QuizCtrl = {
             res.status(500).json({ message: 'Error fetching attempted quizzes', error: error.message });
         }
     },
+  generateCertificate: async (req, res) => {
+  try {
+    const data = req.body;
+    const filePath = await generateCertificatePDF(data);
+     const certificateUrl = await uploadCertificateToCloudinary(
+                    filePath,
+                    `certificate_${data.studentId}`
+                );
 
+    res.status(200).json({
+      success: true,
+      message: "Certificate generated successfully",
+     certificateUrl: certificateUrl,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error generating certificate",
+      error: error.message,
+    });
+  }
+},
+startTimer: async (req, res) => {
+    try {
+        const { quizId } = req.params;
+        const quiz = await Quiz.findById(quizId);
+        if (!quiz) {
+            return res.status(404).json({ message: 'Quiz not found' });
+        }
+         io.to(quizId).emit("quiz-started", {
+    quizId,
+    startingTimer: quiz.startingTimer,
+  });
+        res.status(200).json({ startingTimer: quiz.startingTimer });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching starting timer', error: error.message });
+    }
+},
 };
 
 module.exports = QuizCtrl;

@@ -13,10 +13,10 @@ const {
 
 
 
-router.post("/add",authSuperAdmin,addFaculty);
+router.post("/add",addFaculty);
 router.post("/login", loginFaculty);
 router.put("/update-password", updatePassword);
 router.delete("/delete/:facultyId",authSuperAdmin,deleteFaculty);
-router.get("/all",authSuperAdmin,getAllFaculty);
+router.get("/all",getAllFaculty);
 router.post("/refresh_token",refreshToken);
 module.exports = router;
