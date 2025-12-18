@@ -346,13 +346,12 @@ startQuizTimer:async (req, res) => {
       return res.status(400).json({ message: "Quiz already started" });
     }
 
-    quiz.quizStartTime = new Date();            // SERVER TIME
+    quiz.quizStartTime = new Date();          
     quiz.durationSeconds = quiz.durationMinutes * 60;
     quiz.isStarted = true;
 
     await quiz.save();
 
-    /* 🔥 REAL-TIME EVENT */
     io.to(`timer_${quizId}`).emit("quiz-started", {
       quizId,
       startTime: quiz.quizStartTime,
