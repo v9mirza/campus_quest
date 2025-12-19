@@ -1,0 +1,72 @@
+/* ===== Global Reset (optional but recommended) ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ===== Header Container ===== */
+.app-header {
+  width: 100%;
+  height: 100px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 32px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ===== Left Side (Campus Quest) ===== */
+.left-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.left-logo img {
+  height: 110px;
+  width: auto;
+}
+
+.left-logo span {
+  font-size: 30px;
+  font-weight: bolder;
+  color: #1f2937;
+  letter-spacing: 0.5px;
+}
+
+/* ===== Right Side (Integral University) ===== */
+.right-logo {
+  display: flex;
+  align-items: center;
+}
+
+.right-logo img {
+  height: 70px;
+  width: auto;
+}
+
+/* ===== Responsive (Mobile / Tablet) ===== */
+@media (max-width: 768px) {
+  .app-header {
+    height: 70px;
+    padding: 0 16px;
+  }
+
+  .left-logo img,
+  .right-logo img {
+    height: 50px;
+  }
+
+  .left-logo span {
+    font-size: 18px;
+  }
+}
+
+/* ===== Small Devices ===== */
+@media (max-width: 480px) {
+  .left-logo span {
+    display: none; /* sirf logo dikhe */
+  }
+}
