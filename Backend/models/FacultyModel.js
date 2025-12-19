@@ -1,4 +1,5 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const facultySchema = new mongoose.Schema(
   {
@@ -19,13 +20,16 @@ const facultySchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true
+      lowercase: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, "Invalid email format"]
     },
 
     mobileNumber: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
+      match: [/^[0-9]{10}$/, "Invalid mobile number"]
     },
 
     department: {
@@ -39,18 +43,34 @@ const facultySchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+
+    /* 🔐 PASSWORD */
     password: {
       type: String,
       required: true
     },
-role:{
- type:Number,
- required:true,
- default:0,
-},
-    isTempPassword: {
+
+    /* 🔐 ROLE */
+    role: {
+      type: Number,
+      default: 0 // 0 = Faculty
+    },
+
+    /* 🔁 TEMP PASSWORD FLAG */
+    isTempPasswordUsed: {
       type: Boolean,
-      default: true
+      default: false
+    },
+
+    /* 🔁 FORGOT / RESET PASSWORD */
+    resetToken: {
+      type: String,
+      default: null
+    },
+
+    resetTokenExpiry: {
+      type: Date,
+      default: null
     },
 
     createdQuizzes: [
@@ -64,4 +84,13 @@ role:{
     timestamps: true
   }
 );
-module.exports = mongoose.models.Faculty || mongoose.model("Faculty", facultySchema);
+
+/* 🔐 HASH PASSWORD BEFORE SAVE */
+facultySchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
+module.exports =
+  mongoose.models.Faculty || mongoose.model("Faculty", facultySchema);
