@@ -1,21 +1,20 @@
 const Faculty = require("../models/FacultyModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const sendEmail = require("../utils/sendEmail");
 
+/* =====================================================
+   TOKEN HELPERS
+   ===================================================== */
+const createAccessToken = (payload) =>
+  jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
 
-const createAccessToken = (payload) => {
-  return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: "1d",
-  });
-};
+const createRefreshToken = (payload) =>
+  jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 
-const createRefreshToken = (payload) => {
-  return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: "7d",
-  });
-};
-
-
+/* =====================================================
+   ADD FACULTY (BY HOD) → PASSWORD = TEMP PASSWORD
+   ===================================================== */
 exports.addFaculty = async (req, res) => {
   try {
     const {
@@ -25,7 +24,7 @@ exports.addFaculty = async (req, res) => {
       mobileNumber,
       department,
       designation,
-      password,
+      password
     } = req.body;
 
     if (
@@ -37,61 +36,50 @@ exports.addFaculty = async (req, res) => {
       !designation ||
       !password
     ) {
-      return res.status(400).json({ message: "All fields are required." });
+      return res.status(400).json({ msg: "All fields are required" });
     }
 
     const exists = await Faculty.findOne({
-      $or: [{ email }, { facultyId }],
+      $or: [{ email }, { facultyId }]
     });
+
     if (exists) {
-      return res.status(400).json({
-        message: "Faculty already exists with same email or facultyId.",
-      });
+      return res
+        .status(400)
+        .json({ msg: "Faculty already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newFaculty = new Faculty({
+    const faculty = await Faculty.create({
       facultyId,
       name,
       email,
       mobileNumber,
       department: department.trim(),
       designation,
-      password: hashedPassword,
-      isTempPassword: true,
+      password, // temp password
+      isTempPasswordUsed: false
     });
 
-    await newFaculty.save();
-
-    const accessToken = createAccessToken({ id: newFaculty._id });
-    const refreshToken = createRefreshToken({ id: newFaculty._id });
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      path: "/faculty/refresh_token",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    return res.status(201).json({
-      message: "Faculty registered successfully",
-      accessToken,
+    res.status(201).json({
+      msg: "Faculty added successfully. Password is temporary.",
       faculty: {
-        facultyId: newFaculty.facultyId,
-        name: newFaculty.name,
-        email: newFaculty.email,
-        department: newFaculty.department,
-        designation: newFaculty.designation,
-        role: newFaculty.role,
-      },
+        facultyId: faculty.facultyId,
+        name: faculty.name,
+        email: faculty.email,
+        department: faculty.department,
+        designation: faculty.designation,
+        role: faculty.role
+      }
     });
-  } catch (error) {
-    console.log("Add Faculty Error:", error);
-    return res.status(500).json({ message: "Server error." });
+  } catch (err) {
+    console.error("Add Faculty Error:", err);
+    res.status(500).json({ msg: "Server error" });
   }
 };
 
-
+/* =====================================================
+   LOGIN FACULTY
+   ===================================================== */
 exports.loginFaculty = async (req, res) => {
   try {
     const { facultyId, password } = req.body;
@@ -99,144 +87,213 @@ exports.loginFaculty = async (req, res) => {
     if (!facultyId || !password) {
       return res
         .status(400)
-        .json({ message: "Faculty ID and password required." });
+        .json({ msg: "Faculty ID and password required" });
     }
 
     const faculty = await Faculty.findOne({ facultyId });
     if (!faculty) {
-      return res.status(404).json({ message: "Faculty not found." });
+      return res.status(404).json({ msg: "Faculty not found" });
     }
 
     const isMatch = await bcrypt.compare(password, faculty.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid password." });
+      return res.status(401).json({ msg: "Incorrect password" });
     }
 
-    const accessToken = createAccessToken({ id: faculty._id });
-    const refreshToken = createRefreshToken({ id: faculty._id });
+    const accessToken = createAccessToken({
+      id: faculty._id,
+      role: faculty.role
+    });
+
+    const refreshToken = createRefreshToken({
+      id: faculty._id,
+      role: faculty.role
+    });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      path: "/faculty/refresh_token",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/faculty/refresh-token",
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    return res.status(200).json({
-      message: faculty.isTempPassword
-        ? "Login successful. Please change your temporary password."
-        : "Login successful.",
-      requiresPasswordChange: faculty.isTempPassword,
+    res.json({
+      msg: faculty.isTempPasswordUsed
+        ? "Login successful"
+        : "Temp password login. Change password required.",
+      forcePasswordChange: !faculty.isTempPasswordUsed,
       accessToken,
       faculty: {
+        id: faculty._id,
         facultyId: faculty.facultyId,
         name: faculty.name,
         email: faculty.email,
         department: faculty.department,
         designation: faculty.designation,
-        role: faculty.role,
-      },
-    });
-  } catch (error) {
-    console.log("Faculty Login Error:", error);
-    return res.status(500).json({ message: "Server error." });
-  }
-};
-
-
-exports.refreshToken = async (req, res) => {
-  try {
-    const rfToken = req.cookies.refreshToken;
-
-    if (!rfToken) {
-      return res.status(401).json({ message: "Please login again." });
-    }
-
-    jwt.verify(
-      rfToken,
-      process.env.REFRESH_TOKEN_SECRET,
-      async (err, decoded) => {
-        if (err) {
-          return res
-            .status(403)
-            .json({ message: "Invalid refresh token." });
-        }
-
-        const faculty = await Faculty.findById(decoded.id).select("-password");
-        if (!faculty) {
-          return res.status(404).json({ message: "Faculty not found." });
-        }
-
-        const accessToken = createAccessToken({ id: faculty._id });
-
-        return res.status(200).json({
-          accessToken,
-          faculty: {
-            facultyId: faculty.facultyId,
-            name: faculty.name,
-            email: faculty.email,
-            department: faculty.department,
-            designation: faculty.designation,
-            role: faculty.role,
-          },
-        });
+        role: faculty.role
       }
-    );
-  } catch (error) {
-    console.log("Refresh Token Error:", error);
-    return res.status(500).json({ message: "Server error." });
+    });
+  } catch (err) {
+    console.error("Faculty Login Error:", err);
+    res.status(500).json({ msg: "Server error" });
   }
 };
 
-
-exports.updatePassword = async (req, res) => {
+/* =====================================================
+   CHANGE PASSWORD (FIRST LOGIN)
+   ===================================================== */
+exports.changePassword = async (req, res) => {
   try {
     const { facultyId, newPassword } = req.body;
 
     if (!facultyId || !newPassword) {
       return res
         .status(400)
-        .json({ message: "Faculty ID and new password required." });
+        .json({ msg: "Faculty ID and new password required" });
     }
 
     const faculty = await Faculty.findOne({ facultyId });
     if (!faculty) {
-      return res.status(404).json({ message: "Faculty not found." });
+      return res.status(404).json({ msg: "Faculty not found" });
     }
 
-    faculty.password = await bcrypt.hash(newPassword, 10);
-    faculty.isTempPassword = false;
+    faculty.password = newPassword;
+    faculty.isTempPasswordUsed = true;
 
     await faculty.save();
 
-    return res
-      .status(200)
-      .json({ message: "Password updated successfully." });
-  } catch (error) {
-    console.log("Update Password Error:", error);
-    return res.status(500).json({ message: "Server error." });
+    res.json({ msg: "Password updated successfully" });
+  } catch (err) {
+    console.error("Change Password Error:", err);
+    res.status(500).json({ msg: "Server error" });
   }
 };
 
+/* =====================================================
+   REFRESH TOKEN
+   ===================================================== */
+exports.refreshToken = async (req, res) => {
+  try {
+    const token = req.cookies.refreshToken;
+    if (!token) {
+      return res.status(401).json({ msg: "Please login again" });
+    }
 
+    const decoded = jwt.verify(
+      token,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const faculty = await Faculty.findById(decoded.id).select("-password");
+    if (!faculty) {
+      return res.status(404).json({ msg: "Faculty not found" });
+    }
+
+    const accessToken = createAccessToken({
+      id: faculty._id,
+      role: faculty.role
+    });
+
+    res.json({
+      accessToken,
+      faculty
+    });
+  } catch (err) {
+    console.error("Refresh Token Error:", err);
+    res.status(403).json({ msg: "Invalid refresh token" });
+  }
+};
+
+/* =====================================================
+   FORGOT PASSWORD (EMAIL)
+   ===================================================== */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const faculty = await Faculty.findOne({ email });
+    if (!faculty) {
+      return res.status(404).json({ msg: "Faculty not found" });
+    }
+
+    const resetToken = jwt.sign(
+      { id: faculty._id },
+      process.env.RESET_PASSWORD_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    faculty.resetToken = resetToken;
+    faculty.resetTokenExpiry = Date.now() + 15 * 60 * 1000;
+    await faculty.save();
+
+    const resetLink = `http://localhost:5173/faculty-reset-password/${resetToken}`;
+
+    await sendEmail(
+      email,
+      "Reset Faculty Password",
+      `<p>Hello ${faculty.name},</p>
+       <p><a href="${resetLink}">Reset Password</a></p>`
+    );
+
+    res.json({ msg: "Password reset email sent" });
+  } catch (err) {
+    console.error("Forgot Password Error:", err);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
+/* =====================================================
+   RESET PASSWORD
+   ===================================================== */
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    const decoded = jwt.verify(token, process.env.RESET_PASSWORD_SECRET);
+    const faculty = await Faculty.findById(decoded.id);
+
+    if (
+      !faculty ||
+      faculty.resetToken !== token ||
+      faculty.resetTokenExpiry < Date.now()
+    ) {
+      return res.status(400).json({ msg: "Invalid or expired token" });
+    }
+
+    faculty.password = newPassword;
+    faculty.resetToken = null;
+    faculty.resetTokenExpiry = null;
+    faculty.isTempPasswordUsed = true;
+
+    await faculty.save();
+
+    res.json({ msg: "Password reset successful" });
+  } catch (err) {
+    res.status(400).json({ msg: "Invalid or expired token" });
+  }
+};
+
+/* =====================================================
+   DELETE FACULTY
+   ===================================================== */
 exports.deleteFaculty = async (req, res) => {
   try {
     const { facultyId } = req.params;
 
     const faculty = await Faculty.findOneAndDelete({ facultyId });
     if (!faculty) {
-      return res.status(404).json({ message: "Faculty not found." });
+      return res.status(404).json({ msg: "Faculty not found" });
     }
 
-    return res
-      .status(200)
-      .json({ message: "Faculty deleted successfully." });
-  } catch (error) {
-    console.log("Delete Faculty Error:", error);
-    return res.status(500).json({ message: "Server error." });
+    res.json({ msg: "Faculty deleted successfully" });
+  } catch (err) {
+    console.error("Delete Faculty Error:", err);
+    res.status(500).json({ msg: "Server error" });
   }
 };
 
-
+/* =====================================================
+   GET ALL FACULTY (FILTER + PAGINATION)
+   ===================================================== */
 exports.getAllFaculty = async (req, res) => {
   try {
     const {
@@ -246,7 +303,7 @@ exports.getAllFaculty = async (req, res) => {
       department,
       designation,
       page = 1,
-      limit = 20,
+      limit = 20
     } = req.query;
 
     const query = {};
@@ -261,18 +318,18 @@ exports.getAllFaculty = async (req, res) => {
     const facultyList = await Faculty.find(query)
       .skip(skip)
       .limit(Number(limit))
-      .select("-password -__v");
+      .select("-password -resetToken -resetTokenExpiry -__v");
 
     const total = await Faculty.countDocuments(query);
 
-    return res.status(200).json({
+    res.json({
       total,
       page: Number(page),
       totalPages: Math.ceil(total / limit),
-      faculty: facultyList,
+      faculty: facultyList
     });
-  } catch (error) {
-    console.log("Get All Faculty Error:", error);
-    return res.status(500).json({ message: "Server error." });
+  } catch (err) {
+    console.error("Get All Faculty Error:", err);
+    res.status(500).json({ msg: "Server error" });
   }
 };
