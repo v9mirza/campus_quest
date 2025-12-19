@@ -5,7 +5,7 @@ const authSuperAdmin = require("../middleware/authSuperAdmin");
 const {
   addFaculty,
   loginFaculty,
-  updatePassword,
+  changePassword,
   deleteFaculty,
   getAllFaculty,
   refreshToken
@@ -15,8 +15,9 @@ const {
 
 router.post("/add",addFaculty);
 router.post("/login", loginFaculty);
-router.put("/update-password", updatePassword);
+router.put("/update-password",changePassword);
 router.delete("/delete/:facultyId",authSuperAdmin,deleteFaculty);
 router.get("/all",getAllFaculty);
 router.post("/refresh_token",refreshToken);
 module.exports = router;
+
