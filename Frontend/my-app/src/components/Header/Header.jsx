@@ -3,13 +3,13 @@ import "../styles/Header.css"
 
 const Header = () => {
   return (
-    <header class="app-header">
-  <div class="left-logo">
+    <header className="app-header">
+  <div className="left-logo">
     <img src="/campus-quest.png" alt="Campus Quest Logo" />
     <span>Campus Quest</span>
   </div>
 
-  <div class="right-logo">
+  <div className="right-logo">
     <img src="/integral-logo.png" alt="Integral University Logo" />
   </div>
 </header>

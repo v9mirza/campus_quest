@@ -1,0 +1,163 @@
+/* ================= PAGE LAYOUT ================= */
+
+.quiz-container {
+  background: #f4f6f8;
+  min-height: 100vh;
+  padding: 30px;
+  font-family: Arial, sans-serif;
+}
+
+.page-title {
+  margin-bottom: 20px;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+/* Two column layout */
+.quiz-layout {
+  display: flex;
+  gap: 25px;
+  align-items: flex-start;
+}
+
+/* ================= LEFT CARD ================= */
+
+.quiz-card {
+  background: #E6E6E6;
+  padding: 25px;
+  border-radius: 8px;
+  flex: 2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ================= RIGHT CARD ================= */
+
+.schedule-card {
+  background: #E6E6E6;
+  padding: 20px;
+  border-radius: 8px;
+  flex: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.schedule-card h2 {
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+/* ================= FORM ================= */
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-size: 14px;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #333;
+}
+
+input,
+textarea {
+  padding: 9px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+textarea {
+  resize: none;
+  height: 90px;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: #2ecc71;
+}
+
+#NumberOfQues{
+  padding: 9px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* ================= SECTION ================= */
+
+.section-title {
+  margin: 20px 0 10px;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+/* ================= CHECKBOX ================= */
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  margin-top: 34px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* ================= BUTTONS ================= */
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 25px;
+}
+
+.btn {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn.primary {
+  background: #3a7db8e4;
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: #3A7DB8
+;
+}
+
+/* ================= SCHEDULE CARD INPUTS ================= */
+
+.schedule-card input {
+  margin-bottom: 12px;
+}
+
+/* ================= NEXT BUTTON ================= */
+
+.next-button-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 25px;
+}
