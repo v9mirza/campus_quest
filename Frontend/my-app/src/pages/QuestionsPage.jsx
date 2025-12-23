@@ -54,7 +54,7 @@ const QuestionsPage = () => {
       <h1>{quizData.quizTitle.toUpperCase()}</h1>
       {/* AI Generator */}
       <div className="ai-box">
-        <button className="ai-btn">Generate with AI</button>
+        <button className="ai-btn" onClick={(e)=>Navigate("/chat")}>Generate with AI </button>
       </div>
 
       <h2 className="page-title">Add Questions</h2>

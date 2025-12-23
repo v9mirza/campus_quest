@@ -6,6 +6,7 @@ import departmentReducer from "../features/departmentSlice";
 import { quizApi } from "../services/quizApi";
 import { courseApi } from "../services/coursesApi";
 import { departmentApi } from "../services/departmentApi";
+import {chatApi} from "../services/chatApi";
 
 import {
   persistStore,
@@ -39,6 +40,7 @@ export const store = configureStore({
     [quizApi.reducerPath]: quizApi.reducer,
     [courseApi.reducerPath]: courseApi.reducer,
     [departmentApi.reducerPath]: departmentApi.reducer,
+    [chatApi.reducerPath]:chatApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -56,7 +58,8 @@ export const store = configureStore({
     }).concat(
       quizApi.middleware,
       courseApi.middleware,
-      departmentApi.middleware
+      departmentApi.middleware,
+      chatApi.middleware
     ),
 
   devTools: true,

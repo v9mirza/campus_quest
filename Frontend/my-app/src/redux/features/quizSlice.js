@@ -135,6 +135,23 @@ const quizSlice = createSlice({
     setDurationMinutes(state, action) {
       state.durationMinutes = action.payload;
     },
+    initializeQuestionsFromAI(state, action) {
+  const aiQuestions = action.payload;
+
+  state.totalQuestions = aiQuestions.length;
+
+  state.questions = aiQuestions.map((q) => ({
+    questionText: q.questionText || "",
+    imageUrl: [],
+    options: q.options || ["", "", "", ""],
+    correctAnswer: q.correctAnswer || "",
+    marks: state.marksPerQuestion,
+    negativeMarks: state.negativeMarksPerQuestion,
+  }));
+
+  state.totalMarks =
+    state.totalQuestions * state.marksPerQuestion;
+}
   },
 });
 
@@ -158,6 +175,7 @@ export const {
   setEndTime,
   setDurationMinutes,
   resetQuiz,
+   initializeQuestionsFromAI,
 } = quizSlice.actions;
 
 export default quizSlice.reducer;
