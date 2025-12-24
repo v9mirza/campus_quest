@@ -8,6 +8,10 @@ import QuestionsPage from "./pages/QuestionsPage";
 import Login from "./pages/student/auth/Login";
 import Signup from "./pages/student/auth/Signup";
 
+import ForgotPassword from "./pages/student/auth/ForgotPassword";
+import ResetPassword from "./pages/student/auth/ResetPassword";
+
+
 // Student Dashboard & Quiz
 import Dashboard from "./pages/student/dashboard/Dashboard";
 import QuizDetails from "./pages/student/quiz/QuizDetails";
@@ -22,6 +26,10 @@ const Pages = () => {
       {/* Student Auth */}
       <Route path="/student/login" element={<Login />} />
       <Route path="/student/signup" element={<Signup />} />
+
+      <Route path="/student/forgot-password" element={<ForgotPassword />} />
+      <Route path="/student/reset-password/:token" element={<ResetPassword />} />
+
 
       {/* Student Dashboard */}
       <Route path="/student/dashboard" element={<Dashboard />} />
