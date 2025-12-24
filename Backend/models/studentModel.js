@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 
 const studentSchema = new mongoose.Schema(
   {
-    studentId: {
+    enrollmentNumber: {
       type: String,
       required: true,
       unique: true,

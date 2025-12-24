@@ -392,6 +392,18 @@ getQuizTimer:async (req, res) => {
     });
   }
 },
+QuizRegisteredStudents:async(req,res)=>{
+    const {quizId} = req.params;
+    const quiz = await Quiz.findById(quizId);
+   if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
+    }
+    const registerStu = quiz.registeredStudents;
+    res.status(200).json({
+        message:"Registered Students",
+        registeredStudent:registerStu,
+    })
+}
 };
 
 module.exports = QuizCtrl;

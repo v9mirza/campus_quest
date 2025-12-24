@@ -19,6 +19,8 @@ import {
   REGISTER,
 } from "redux-persist";
 import storage from "redux-persist/lib/storage";
+import { studentApi } from "../services/studentApi";
+import studentReducer from "../features/studentSlice";
 
 /* ✅ Persist only quiz slice */
 const persistConfig = {
@@ -28,7 +30,8 @@ const persistConfig = {
 
 const persistedQuizReducer = persistReducer(
   persistConfig,
-  quizReducer
+  quizReducer,
+  studentReducer,
 );
 
 export const store = configureStore({
@@ -36,11 +39,13 @@ export const store = configureStore({
     quiz: persistedQuizReducer,
     course: courseReducer,
     department: departmentReducer,
+      student: studentReducer,
 
     [quizApi.reducerPath]: quizApi.reducer,
     [courseApi.reducerPath]: courseApi.reducer,
     [departmentApi.reducerPath]: departmentApi.reducer,
     [chatApi.reducerPath]:chatApi.reducer,
+     [studentApi.reducerPath]: studentApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -59,7 +64,8 @@ export const store = configureStore({
       quizApi.middleware,
       courseApi.middleware,
       departmentApi.middleware,
-      chatApi.middleware
+      chatApi.middleware,
+      studentApi.middleware
     ),
 
   devTools: true,

@@ -15,6 +15,9 @@ router.post("/register", studentController.registerStudent);
 // VERIFY EMAIL (OTP)
 router.post("/verify-email", studentController.verifyEmail);
 
+//Resent Otp
+router.post("/resend-otp",studentController.resendOtp);
+
 // LOGIN
 router.post("/login", studentController.loginStudent);
 

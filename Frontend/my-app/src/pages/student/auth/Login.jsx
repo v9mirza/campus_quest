@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import './styles/Auth.css';
+import "./Auth.css";
+import { useLoginStudentMutation } from '../../../redux/services/studentApi';
 
 const Login = () => {
+    const [loginStudent, { isLoading, error }] = useLoginStudentMutation();
     const [formData, setFormData] = useState({
         identifier: '', // email or studentId
         password: ''
@@ -16,10 +18,11 @@ const Login = () => {
     
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async(e) => {
         e.preventDefault();
         console.log('Login Data:', formData);
-        // Add API call logic here
+        const res = await loginStudent({formData}).unwrap;
+        console.log(res);
     };
 
     return (

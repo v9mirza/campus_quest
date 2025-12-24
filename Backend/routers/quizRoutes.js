@@ -29,6 +29,8 @@ router.delete('/:quizId',authFaculty,quizController.deleteQuizById);
 
 router.post('/:quizId/register-student',auth, quizController.registerStudentForQuiz);
 
+router.get('/:quizId/registeredStudent',quizController.QuizRegisteredStudents);
+
 router.get('/department/:departmentName',authSuperAdmin,quizController.getQuizzesByDepartment);
 
 router.post('/:quizId/submit',auth,quizController.submitQuiz);
