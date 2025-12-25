@@ -227,113 +227,62 @@
 
 
 
+const Course = require("../models/courseModel");
 
 
-
-const Course = require("../models/CourseModel");
 
 /* ================================
-   Normalize input (convert to uppercase)
+   Normalize Input Helper
 ================================ */
-function normalizeInput(data) {
+const normalizeInput = (data) => {
   return {
-    courseType: data.courseType
-      ? String(data.courseType).trim().toLowerCase()
-      : "",
-    department: data.department 
+    department: data.department
       ? String(data.department).trim().toUpperCase()
       : "",
-    courseName: data.courseName 
-      ? String(data.courseName).trim().toUpperCase()
+    courseName: data.courseName
+      ? String(data.courseName).trim()
       : "",
     year: Number(data.year),
     groups: Array.isArray(data.groups)
-      ? data.groups.map(g => String(g).trim().toUpperCase()).filter(Boolean)
+      ? data.groups
+          .map((g) => String(g).trim().toUpperCase())
+          .filter(Boolean)
       : [],
   };
-}
+};
 
 /* =========================================
-   CREATE or MERGE COURSE (MAIN FIXED API)
+   CREATE OR MERGE COURSE
 ========================================= */
 exports.createOrMergeCourse = async (req, res) => {
   try {
-    const { courseType, department, courseName, year, groups } =
+    const { department, courseName, year, groups } =
       normalizeInput(req.body);
 
-    // 🔐 createdBy ALWAYS from token
-    const createdBy = req.user._id;
+    // 🔐 Always from auth middleware
+    const createdBy = req.user.id;
 
     /* -------- Validation -------- */
-    if (!courseType || !courseName || !year) {
+    if (!department || !courseName || !year) {
       return res.status(400).json({
         success: false,
-        message: "courseType, courseName and year are required.",
+        message: "Department, Course Name and Year are required.",
       });
     }
 
-    if (!["departmental", "global"].includes(courseType)) {
-      return res.status(400).json({
-        success: false,
-        message: "courseType must be 'departmental' or 'global'.",
-      });
-    }
-
-    if (courseType === "departmental") {
-      if (!department) {
-        return res.status(400).json({
-          success: false,
-          message: "department is required for departmental courses.",
-        });
-      }
-
-      if (!groups.length) {
-        return res.status(400).json({
-          success: false,
-          message: "At least one group is required for departmental courses.",
-        });
-      }
-    }
-
-    /* -------- Check existing course (CASE INSENSITIVE) -------- */
-    // Convert search criteria to uppercase for case-insensitive comparison
-    const filter =
-      courseType === "departmental"
-        ? { 
-            courseType, 
-            department: department.toUpperCase(), 
-            courseName: courseName.toUpperCase(), 
-            year 
-          }
-        : { 
-            courseType, 
-            courseName: courseName.toUpperCase(), 
-            year 
-          };
-
-    // Use regex for case-insensitive search in database
+    /* -------- Check existing course -------- */
     const existingCourse = await Course.findOne({
-      courseType,
+      department,
+      normalizedCourseName: courseName.toLowerCase(),
       year,
-      $or: [
-        { 
-          courseName: { $regex: new RegExp(`^${courseName}$`, 'i') },
-          ...(courseType === "departmental" ? { department: { $regex: new RegExp(`^${department}$`, 'i') } } : {})
-        }
-      ]
-    }).populate("createdBy", "name email");
+    });
 
-    // 🔁 Merge groups if already exists
+    /* -------- Merge groups if course exists -------- */
     if (existingCourse) {
-      if (courseType === "departmental") {
-        // Combine groups, convert to uppercase, and remove duplicates
-        const combinedGroups = [
-          ...new Set([
-            ...existingCourse.groups.map(g => g.toUpperCase()),
-            ...groups
-          ])
+      if (groups.length) {
+        existingCourse.groups = [
+          ...new Set([...existingCourse.groups, ...groups]),
         ];
-        existingCourse.groups = combinedGroups;
         await existingCourse.save();
       }
 
@@ -346,14 +295,12 @@ exports.createOrMergeCourse = async (req, res) => {
 
     /* -------- Create new course -------- */
     const newCourse = await Course.create({
-      courseType,
-      department: courseType === "departmental" ? department.toUpperCase() : undefined,
-      courseName: courseName.toUpperCase(),
+      department,
+      courseName,
+      normalizedCourseName: courseName.toLowerCase(),
       year,
-      groups: courseType === "departmental" 
-        ? groups.map(g => g.toUpperCase()) 
-        : [],
-      createdBy, // ✅ from token
+      groups,
+      createdBy,
     });
 
     const populatedCourse = await Course.findById(newCourse._id).populate(
@@ -380,34 +327,31 @@ exports.createOrMergeCourse = async (req, res) => {
 exports.updateCourse = async (req, res) => {
   try {
     const body = normalizeInput(req.body);
-    
-    // Convert values to uppercase before saving
-    if (body.department) body.department = body.department.toUpperCase();
-    if (body.courseName) body.courseName = body.courseName.toUpperCase();
-    if (body.groups && body.groups.length) {
-      body.groups = body.groups.map(g => g.toUpperCase());
+
+    if (body.courseName) {
+      body.normalizedCourseName = body.courseName.toLowerCase();
     }
 
-    const updated = await Course.findByIdAndUpdate(
+    const updatedCourse = await Course.findByIdAndUpdate(
       req.params.id,
       body,
       { new: true, runValidators: true }
     ).populate("createdBy", "name email");
 
-    if (!updated) {
+    if (!updatedCourse) {
       return res.status(404).json({
         success: false,
         message: "Course not found.",
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Course updated successfully.",
-      course: updated,
+      course: updatedCourse,
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: err.message,
     });
@@ -419,22 +363,29 @@ exports.updateCourse = async (req, res) => {
 ========================== */
 exports.getAllCourses = async (req, res) => {
   try {
-    const courses = await Course.find({})
+    const courses = await Course.find({
+      department: req.user.department, // 🔥 MAIN FILTER
+    })
       .populate("createdBy", "name email")
       .sort({ createdAt: -1 });
+       console.log(
+      `📚 Total Courses in ${req.user.department} department:`,
+      courses.length
+    );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       total: courses.length,
-      course: courses,
+      courses,
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: err.message,
     });
   }
 };
+
 
 /* ==========================
    GET COURSE BY ID
@@ -453,12 +404,12 @@ exports.getCourseById = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       course,
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: err.message,
     });
@@ -470,21 +421,21 @@ exports.getCourseById = async (req, res) => {
 ========================== */
 exports.deleteCourse = async (req, res) => {
   try {
-    const deleted = await Course.findByIdAndDelete(req.params.id);
+    const deletedCourse = await Course.findByIdAndDelete(req.params.id);
 
-    if (!deleted) {
+    if (!deletedCourse) {
       return res.status(404).json({
         success: false,
         message: "Course not found.",
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Course deleted successfully.",
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: err.message,
     });

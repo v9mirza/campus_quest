@@ -16,7 +16,7 @@ router.post("/register", studentController.registerStudent);
 router.post("/verify-email", studentController.verifyEmail);
 
 // LOGIN
-router.post("/login", studentController.loginStudent);
+// router.post("/login", studentController.loginStudent);
 
 // REFRESH ACCESS TOKEN
 router.post("/refresh", studentController.refreshToken);

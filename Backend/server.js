@@ -12,6 +12,8 @@ const facultyRoutes = require('./routers/facultyRoutes');
 const superAdminRoutes = require('./routers/superAdminRoutes');
 const courseRoutes = require('./routers/courseRoutes');
 const leaderboardRoutes = require('./routers/leaderboardRoutes');
+const authRoutes = require('./routers/authRoutes');
+
 
 //Importing HTTP and creating server 
 const http = require("http");
@@ -24,11 +26,14 @@ const PORT = process.env.PORT || 3000;
 // Middlewares
 app.use(express.json());
 app.use(cookieParser());
+
 app.use(cors({
-  origin: ["http://localhost:3000"],
-  methods: ["GET", "POST","PUT", "DELETE"],
-  credentials: true     
+  origin: "http://localhost:3000",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
 
 //Routes 
 app.use('/students', studentRoutes);
@@ -37,6 +42,7 @@ app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/course', courseRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use("/api", authRoutes);
 
 
 
@@ -79,3 +85,5 @@ mongoose.connect(process.env.MONGO_URI)
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+

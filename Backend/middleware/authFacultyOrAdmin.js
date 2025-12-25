@@ -1,84 +1,53 @@
-// const jwt = require('jsonwebtoken');
-// const Faculty = require('../models/FacultyModel');
-// const SuperAdmin = require('../models/superAdminModel');
 
-// const authFacultyOrSuperAdmin = async (req, res, next) => {
-//     try {
-//         const token = req.header('Authorization');
-
-//         if (!token) {
-//             return res.status(401).json({ message: "No token provided" });
-//         }
-
-//         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-
-//         // 🔍 First check Faculty
-//         const faculty = await Faculty.findById(decoded.id).select('-password');
-//         if (faculty) {
-//             req.user = faculty;
-//             req.role = "FACULTY";
-//             return next();
-//         }
-
-//         // 🔍 If not Faculty, check SuperAdmin (HOD)
-//         const superAdmin = await SuperAdmin.findById(decoded.id).select('-password');
-//         if (superAdmin) {
-//             req.user = superAdmin;
-//             req.role = "SUPERADMIN";
-//             return next();
-//         }
-
-//         return res.status(401).json({ message: "Unauthorized access" });
-
-//     } catch (err) {
-//         return res.status(401).json({ message: "Token is not valid" });
-//     }
-// };
-
-// module.exports = authFacultyOrSuperAdmin;
 
 
 
 const jwt = require("jsonwebtoken");
-const Faculty = require("../models/FacultyModel");
 const SuperAdmin = require("../models/superAdminModel");
 
-const authFacultyOrSuperAdmin = async (req, res, next) => {
+const authFacultyOrAdmin = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies?.accessToken;
 
-    // ❌ No header
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
 
-    // ✅ Extract actual token
-    const token = authHeader.split(" ")[1];
-
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    // 🔍 Check Faculty
-    const faculty = await Faculty.findById(decoded.id).select("-password");
-    if (faculty) {
-      req.user = faculty;
-      req.role = "FACULTY";
-      return next();
+    // ✅ Allow only superadmin / HOD
+    if (decoded.role !== "superadmin") {
+      return res.status(403).json({ message: "Access denied" });
     }
 
-    // 🔍 Check SuperAdmin
-    const superAdmin = await SuperAdmin.findById(decoded.id).select("-password");
-    if (superAdmin) {
-      req.user = superAdmin;
-      req.role = "SUPERADMIN";
-      return next();
+    const superAdmin = await SuperAdmin.findById(decoded.id).select(
+      "_id name department role"
+    );
+
+    if (!superAdmin) {
+      return res.status(403).json({ message: "SuperAdmin not found" });
     }
 
-    return res.status(401).json({ message: "Unauthorized access" });
+    if (!superAdmin.department) {
+      return res.status(403).json({ message: "Department not assigned" });
+    }
 
+    // 🔥 Attach clean user object
+    req.user = {
+      id: superAdmin._id,
+      role: superAdmin.role,
+      department: superAdmin.department
+    };
+
+    next();
   } catch (err) {
     console.error("AUTH ERROR:", err.message);
-    return res.status(401).json({ message: "Token is not valid" });
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
 
-module.exports = authFacultyOrSuperAdmin;
+module.exports = authFacultyOrAdmin;
+
+
+
+

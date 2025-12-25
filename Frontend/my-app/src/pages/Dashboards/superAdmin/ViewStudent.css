@@ -1,80 +1,6 @@
-/* .student-page {
-  padding: 24px;
-  background: #f5f5f5;
-  min-height: 100vh;
-}
-
-.student-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.student-header h2 {
-  margin: 0;
-}
-
-.add-btn {
-  background: #3fa45b;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.student-controls {
-  display: flex;
-  gap: 12px;
-  margin: 20px 0;
-}
-
-.student-controls input,
-.student-controls select {
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  min-width: 250px;
-}
-
-.course-card {
-  background: #e0e0e0;
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.course-header {
-  padding: 14px 18px;
-  display: flex;
-  justify-content: space-between;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.student-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #e0e0e0;
-}
-
-.student-table th,
-.student-table td {
-  padding: 12px;
-  border-bottom: 1px solid #888;
-  text-align: left;
-}
-
-.delete-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
-} */
 
 
-/* ViewStudent.css */
 
-/* Base Styles */
 .student-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -82,7 +8,7 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Loading State */
+
 .loading-container {
   display: flex;
   flex-direction: column;
