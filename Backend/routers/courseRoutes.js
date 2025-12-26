@@ -8,7 +8,8 @@ const {
   getCourseById,
   updateCourse,
   deleteCourse,
-  getGroups
+  getGroups,
+  createCoursesBulk
 } = require("../controllers/courseController");
 
 // Create or merge course
@@ -27,5 +28,8 @@ router.put("/:id",authSuperAdmin,updateCourse);
 
 // Delete course
 router.delete("/:id",authSuperAdmin,deleteCourse);
+
+router.post("/bulk-create", createCoursesBulk);
+
 
 module.exports = router;

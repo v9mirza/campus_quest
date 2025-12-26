@@ -129,3 +129,58 @@ exports.getGroups = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+exports.createCoursesBulk = async (req, res) => {
+  try {
+    const { courses } = req.body;
+
+    if (!Array.isArray(courses) || courses.length === 0) {
+      return res.status(400).json({
+        message: "Courses array is required"
+      });
+    }
+
+    const created = [];
+    const skipped = [];
+
+    for (const item of courses) {
+      const { department, courseName, year, groups } = item;
+
+      if (!department || !Array.isArray(courseName)) {
+        skipped.push({ department, reason: "Invalid data" });
+        continue;
+      }
+
+      const exists = await Course.findOne({ department });
+
+      if (exists) {
+        skipped.push({ department, reason: "Already exists" });
+        continue;
+      }
+
+      const newCourse = new Course({
+        department: department.trim(),
+        courseName: courseName.map(c => c.trim()),
+        year: year || [],
+        groups: groups || []
+        // createdBy: req.superAdmin._id
+      });
+
+      const saved = await newCourse.save();
+      created.push(saved);
+    }
+
+    return res.status(201).json({
+      message: "Bulk course creation completed",
+      createdCount: created.length,
+      skippedCount: skipped.length,
+      skipped
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Something went wrong",
+      error: err.message
+    });
+  }
+};

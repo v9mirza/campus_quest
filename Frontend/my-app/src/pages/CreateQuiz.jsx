@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React from "react";
 import "./styles/CreateQuiz.css";
 import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
 import { useGetAllCoursesQuery } from "../redux/services/coursesApi";
+import { useGetAllDepartmentsQuery } from "../redux/services/departmentApi";
 import { useNavigate } from "react-router-dom";
 import {
   setQuizTitle,
@@ -23,11 +24,11 @@ import {
   setEndTime,
   setDurationMinutes,
 } from "../redux/features/quizSlice";
-import { useGetAllDepartmentsQuery } from "../redux/services/departmentApi";
 
 const CreateQuiz = () => {
   const dispatch = useDispatch();
-  const Navigate = useNavigate();
+  const navigate = useNavigate();
+
   const {
     quizTitle,
     subject,
@@ -48,290 +49,224 @@ const CreateQuiz = () => {
     durationMinutes,
   } = useSelector((state) => state.quiz);
 
-  const {
-  data: courses,
-  isLoading: coursesLoading,
-  isError: coursesError,
-  error: coursesErrorData,
-} = useGetAllCoursesQuery();
+  const { data: courses, isLoading: coursesLoading } =
+    useGetAllCoursesQuery();
 
-const {
-  data: departments,
-  isLoading: departmentsLoading,
-  isError: departmentsError,
-  error: departmentsErrorData,
-  refetch,
-} = useGetAllDepartmentsQuery();
+  const { data: departments, isLoading: departmentsLoading } =
+    useGetAllDepartmentsQuery();
 
-if(departmentsLoading){
-  return <p>Loading...</p>;
-}
-if(departmentsError){
-  return <p>Error loading courses: {coursesErrorData?.message || 'Unknown error'}</p>;
-}
+  if (coursesLoading || departmentsLoading) return <p>Loading...</p>;
 
-if(coursesLoading){
-  return <p>Loading...</p>;
-}
-if(coursesError){
-  return <p>Error loading courses: {coursesErrorData?.message || 'Unknown error'}</p>;
-}
+  const departmentList =
+    departments?.data?.[0]?.departmentNames || [];
 
-const departmentList = departments?.data?.[0]?.departmentNames || [];
+  const allCourses = courses?.courses || [];
 
-
-const courseOptions =
-  courses?.courses?.map((course) => ({
-    value: course._id,
-    label: course.courseName.join(", "),
-    yrs: course.year,
-    grps: course.groups,
-  })) || [];
-
-
-  return (
-    <div className="quiz-container">
-      <h2 className="page-title">Create Quiz</h2>
-
-      <div className="quiz-layout">
-        <div className="quiz-card">
-          <div className="form-row">
-            <div className="form-group">
-              <label>Quiz Title</label>
-              <input
-                type="text"
-                value={quizTitle}
-                onChange={(e) => dispatch(setQuizTitle(e.target.value))}
-                placeholder="Enter Quiz Title"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Subject</label>
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) => dispatch(setSubject(e.target.value))}
-                placeholder="Enter Subject"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => dispatch(setDescription(e.target.value))}
-              placeholder="Enter Description"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Quiz Department</label>
-          <select
-  value={department}
-  onChange={(e) => dispatch(setDepartment(e.target.value))}
-  className="all-select"
->
-  <option value="">Select Department</option>
-
-  {departmentList.map((dept, index) => (
-    <option key={index} value={dept}>
-      {dept}
-    </option>
-  ))}
-</select>
-          </div>
-
-          <h3 className="section-title">Target Audience (optional)</h3>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Courses</label>
-              <Select
-                options={courseOptions}
-                isMulti
-                value={selectedCourses}
-                onChange={(v) => dispatch(setSelectedCourses(v))}
-                placeholder="Select Courses"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Years</label>
-              <Select
-                options={courseOptions
-                  .flatMap((course) =>
-                    course.yrs.map((yr) => ({
-                      value: yr,
-                      label: `Year ${yr}`,
-                    }))
-                  )
-                  .filter(( (value, index, self) =>
-                    self.findIndex((v) => v.value === value.value) === index
-                  ))}
-                isMulti
-                value={selectedYears}
-                onChange={(v) => dispatch(setSelectedYears(v))}
-                placeholder="Select Years"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Groups</label>
-              <Select
-                options={courseOptions
-                  .flatMap((course) =>
-                    course.grps.map((grp) => ({
-                      value: grp,
-                      label: grp,
-                    }))
-                  )
-                  .filter((value, index, self) =>
-                    self.findIndex((v) => v.value === value.value) === index
-                  )
-                    }
-                isMulti
-                value={selectedGroups}
-                onChange={(v) => dispatch(setSelectedGroups(v))}
-                placeholder="Select Groups"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Total Questions</label>
-              <select
-                value={totalQuestions}
-                onChange={(e) =>
-                  dispatch(setTotalQuestions(Number(e.target.value)))
-                }
-                className="all-select"
-              >
-                <option value={0}>0</option>
-                <option value={1}>1</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={30}>30</option>
-                <option value={40}>40</option>
-                <option value={50}>50</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Passing Marks</label>
-              <input
-                type="number"
-                value={passingMarks||""}
-                onChange={(e) =>
-                  dispatch(setPassingMarks(Number(e.target.value)))
-                }
-                placeholder="Enter Passing Marks"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Marks per Question</label>
-              <input
-                type="number"
-                value={marksPerQuestion||""}
-                onChange={(e) =>
-                  dispatch(setMarksPerQuestion(Number(e.target.value)))
-                }
-                placeholder="Enter Marks"
-              />
-            </div>
-
-            <div className="form-group checkbox-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={negativeMark}
-                  onChange={(e) =>
-                    dispatch(setNegativeMark(e.target.checked))
-                  }
-                />
-                Add Negative Marking
-              </label>
-            </div>
-          </div>
-
-          {negativeMark && (
-            <div className="form-group">
-              <label>Negative Marks per Question</label>
-              <input
-                type="number"
-                value={negativeMarksPerQuestion||""}
-                onChange={(e) =>
-                  dispatch(
-                    setNegativeMarksPerQuestion(Number(e.target.value))
-                  )
-                }
-                placeholder="Enter Negative Marks"
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="quiz-card schedule-card">
-          <h3 className="section-title">Schedule Quiz</h3>
-
-          <div className="form-group">
-            <label>Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => dispatch(setStartDate(e.target.value))}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Start Time</label>
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => dispatch(setStartTime(e.target.value))}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => dispatch(setEndDate(e.target.value))}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>End Time</label>
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => dispatch(setEndTime(e.target.value))}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Duration (minutes)</label>
-            <input
-              type="number"
-              value={durationMinutes}
-              onChange={(e) =>
-                dispatch(setDurationMinutes(Number(e.target.value)))
-              }
-              placeholder="Enter Duration"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="action-buttons">
-        <button className="btn primary" onClick={()=>Navigate('/questions')}>Next</button>
-      </div>
-    </div>
+  const courseOptions = allCourses.flatMap((doc) =>
+    doc.courseName.map((name) => ({
+      value: name,
+      label: name,
+      yrs: doc.year,
+      grps: doc.groups,
+    }))
   );
+
+  const yearOptions = Array.from(
+    new Set(selectedCourses.flatMap((c) => c.yrs || []))
+  ).map((yr) => ({
+    value: yr,
+    label: `Year ${yr}`,
+  }));
+
+  const groupOptions = Array.from(
+    new Set(selectedCourses.flatMap((c) => c.grps || []))
+  ).map((grp) => ({
+    value: grp,
+    label: grp,
+  }));
+
+return (
+  <div className="cq-page">
+    <div className="cq-card">
+      <h2>Create Quiz</h2>
+      <p className="cq-subtitle">
+        Configure quiz details and audience
+      </p>
+
+      <div className="cq-grid">
+        <input
+          placeholder="Quiz Title"
+          value={quizTitle}
+          onChange={(e) => dispatch(setQuizTitle(e.target.value))}
+        />
+
+        <input
+          placeholder="Subject"
+          value={subject}
+          onChange={(e) => dispatch(setSubject(e.target.value))}
+        />
+      </div>
+
+      <textarea
+        placeholder="Quiz Description"
+        value={description}
+        onChange={(e) => dispatch(setDescription(e.target.value))}
+      />
+
+      <select
+        value={department}
+        onChange={(e) => dispatch(setDepartment(e.target.value))}
+      >
+        <option value="">Select Department</option>
+        {departmentList.map((d, i) => (
+          <option key={i} value={d}>{d}</option>
+        ))}
+      </select>
+
+      <h4>Target Audience(optional)</h4>
+
+      {/* <Select
+        isMulti
+        options={courseOptions}
+        value={selectedCourses}
+        onChange={(v) => dispatch(setSelectedCourses(v))}
+        placeholder="Select Courses"
+        classNamePrefix="cq-select"
+      /> */}
+      <Select
+  isMulti
+  options={courseOptions}
+  value={selectedCourses}
+  onChange={(v) => dispatch(setSelectedCourses(v))}
+  placeholder="Select Courses"
+  classNamePrefix="cq-select"
+  menuPortalTarget={document.body}
+  menuPosition="fixed"
+/>
+
+
+      <div className="cq-grid">
+        <Select
+          isMulti
+          options={yearOptions}
+          value={selectedYears}
+          onChange={(v) => dispatch(setSelectedYears(v))}
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
+          placeholder="Select Years"
+          classNamePrefix="cq-select"
+        />
+
+        <Select
+          isMulti
+          options={groupOptions}
+          value={selectedGroups}
+          onChange={(v) => dispatch(setSelectedGroups(v))}
+          placeholder="Select Groups"
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
+          classNamePrefix="cq-select"
+        />
+      </div>
+
+      <div className="cq-grid">
+        <select
+          value={totalQuestions}
+          onChange={(e) =>
+            dispatch(setTotalQuestions(Number(e.target.value)))
+          }
+        >
+          {[0, 10, 20, 30, 40, 50].map((n) => (
+            <option key={n} value={n}>
+              {n} Questions
+            </option>
+          ))}
+        </select>
+
+        <input
+          type="number"
+          placeholder="Passing Marks"
+          value={passingMarks || ""}
+          onChange={(e) =>
+            dispatch(setPassingMarks(Number(e.target.value)))
+          }
+        />
+      </div>
+
+      <input
+        type="number"
+        placeholder="Marks per Question"
+        value={marksPerQuestion || ""}
+        onChange={(e) =>
+          dispatch(setMarksPerQuestion(Number(e.target.value)))
+        }
+      />
+
+      <label className="cq-checkbox">
+        <input
+          type="checkbox"
+          checked={negativeMark}
+          onChange={(e) =>
+            dispatch(setNegativeMark(e.target.checked))
+          }
+        />
+        Enable Negative Marking
+      </label>
+
+      {negativeMark && (
+        <input
+          type="number"
+          placeholder="Negative Marks per Question"
+          value={negativeMarksPerQuestion || ""}
+          onChange={(e) =>
+            dispatch(setNegativeMarksPerQuestion(Number(e.target.value)))
+          }
+        />
+      )}
+
+      <h4>Schedule</h4>
+
+      <div className="cq-grid">
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => dispatch(setStartDate(e.target.value))}
+        />
+        <input
+          type="time"
+          value={startTime}
+          onChange={(e) => dispatch(setStartTime(e.target.value))}
+        />
+      </div>
+
+      <div className="cq-grid">
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => dispatch(setEndDate(e.target.value))}
+        />
+        <input
+          type="time"
+          value={endTime}
+          onChange={(e) => dispatch(setEndTime(e.target.value))}
+        />
+      </div>
+
+      <input
+        type="number"
+        placeholder="Duration (minutes)"
+        value={durationMinutes}
+        onChange={(e) =>
+          dispatch(setDurationMinutes(Number(e.target.value)))
+        }
+      />
+
+      <button className="cq-btn" onClick={() => navigate("/questions")}>
+        Next
+      </button>
+    </div>
+  </div>
+);
 };
 
 export default CreateQuiz;

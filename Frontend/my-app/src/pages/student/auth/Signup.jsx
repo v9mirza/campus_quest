@@ -8,12 +8,15 @@ import {
 } from "../../../redux/features/studentSlice";
 import { useRegisterStudentMutation } from "../../../redux/services/studentApi";
 import { useGetAllDepartmentsQuery } from "../../../redux/services/departmentApi";
+import { useGetAllCoursesQuery } from "../../../redux/services/coursesApi";
+import { setUser } from "../../../redux/features/authSlice";
+
 
 const Signup = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // ✅ SAFE destructuring (prevents crash)
+  // ✅ SAFE destructuring
   const {
     enrollmentNumber = "",
     name = "",
@@ -22,6 +25,7 @@ const Signup = () => {
     mobileNumber = "",
     department = "",
     course = "",
+    year = "",
     semester = "",
     group = "",
     password = "",
@@ -31,15 +35,28 @@ const Signup = () => {
   const [registerStudent, { isLoading }] =
     useRegisterStudentMutation();
 
-  // 🔹 Departments API
-  const {
-    data: departments,
-    isLoading: departmentsLoading,
-    isError: departmentsError,
-  } = useGetAllDepartmentsQuery();
+  // 🔹 APIs
+  const { data: departments, isLoading: departmentsLoading } =
+    useGetAllDepartmentsQuery();
 
+  const { data: courses } = useGetAllCoursesQuery();
+
+  // 🔹 Department list
   const departmentList =
     departments?.data?.[0]?.departmentNames || [];
+
+  // 🔹 All courses
+  const allCourses = courses?.courses || [];
+
+  // 🔹 Filter courses by department
+  const filteredCourses = allCourses.filter(
+    (c) => c.department === department
+  );
+
+  // 🔹 Selected course object
+  const selectedCourseObj = filteredCourses.find(
+    (c) => c.courseName.includes(course)
+  );
 
   // 🔹 Handle input change
   const handleChange = (e) => {
@@ -51,7 +68,7 @@ const Signup = () => {
     );
   };
 
-  // 🔹 Handle submit
+  // 🔹 Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -61,7 +78,7 @@ const Signup = () => {
     }
 
     if (!email.endsWith("@student.iul.ac.in")) {
-      alert("Only college email is allowed");
+      alert("Only college email allowed");
       return;
     }
 
@@ -74,28 +91,27 @@ const Signup = () => {
         mobileNumber,
         department,
         course,
-        semester,
+        year,
+       semester: Number(semester),
         group,
         password,
       };
-
       const res = await registerStudent(payload).unwrap();
+      dispatch(setUser(res.user));
 
       if (res) {
         dispatch(resetStudentForm());
-        navigate("/verifyOtp", {
-          state: { email },
-        });
+        console.log(email);
+        navigate("/student/verifyOtp", { state: { email } });
       }
     } catch (err) {
-      console.error(err);
       alert(err?.data?.error || "Signup failed");
     }
   };
 
   return (
     <div className="auth-page">
-      <div className="auth-container" style={{ maxWidth: "800px" }}>
+      <div className="auth-container" style={{ maxWidth: "900px" }}>
         <h2 className="auth-title">Student Registration</h2>
         <p className="auth-subtitle">
           Join the Campus Quest community
@@ -153,7 +169,7 @@ const Signup = () => {
               <option value="Other">Other</option>
             </select>
 
-            {/* ✅ FIXED department select */}
+            {/* 🔹 Department */}
             <select
               name="department"
               value={department}
@@ -162,53 +178,98 @@ const Signup = () => {
               disabled={departmentsLoading}
               required
             >
-              <option value="">
-                {departmentsLoading
-                  ? "Loading departments..."
-                  : "Select Department"}
-              </option>
-
-              {!departmentsLoading &&
-                departmentList.map((dept, index) => (
-                  <option key={index} value={dept}>
-                    {dept}
-                  </option>
-                ))}
+              <option value="">Select Department</option>
+              {departmentList.map((dept, idx) => (
+                <option key={idx} value={dept}>
+                  {dept}
+                </option>
+              ))}
             </select>
 
-            {departmentsError && (
-              <p style={{ color: "red" }}>
-                Failed to load departments
-              </p>
-            )}
-
-            <input
+            {/* 🔹 Course */}
+            <select
               name="course"
-              placeholder="Course"
               value={course}
               onChange={handleChange}
-              className="auth-input"
+              className="auth-select"
+              disabled={!department}
               required
-            />
+            >
+              <option value="">Select Course</option>
 
-            <input
+              {filteredCourses.map((c) =>
+                c.courseName.map((singleCourse, idx) => (
+                  <option
+                    key={`${c._id}-${idx}`}
+                    value={singleCourse}
+                  >
+                    {singleCourse}
+                  </option>
+                ))
+              )}
+            </select>
+
+            {/* 🔹 YEAR (Course duration) */}
+            <select
+              name="year"
+              value={year}
+              onChange={handleChange}
+              className="auth-select"
+              disabled={!selectedCourseObj}
+              required
+            >
+              <option value="">Select Year</option>
+              {selectedCourseObj?.year?.map((yr) => (
+                <option key={yr} value={yr}>
+                  Year {yr}
+                </option>
+              ))}
+            </select>
+
+            {/* 🔹 SEMESTER (separate field) */}
+            {/* <input
               name="semester"
               type="number"
-              placeholder="Semester"
+              placeholder="Semester (ex-6)"
               value={semester}
               onChange={handleChange}
               className="auth-input"
               required
-            />
+            /> */}
+           <select
+  name="semester"
+  value={semester}
+  onChange={handleChange}
+  className="auth-select"
+  required
+>
+              <option value="">Select Semester</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
 
-            <input
+            {/* 🔹 GROUP */}
+            <select
               name="group"
-              placeholder="Group"
               value={group}
               onChange={handleChange}
-              className="auth-input"
+              className="auth-select"
+              disabled={!selectedCourseObj}
               required
-            />
+            >
+              <option value="">Select Group</option>
+              {selectedCourseObj?.groups?.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="signup-grid">

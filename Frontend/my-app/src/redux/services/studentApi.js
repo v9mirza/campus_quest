@@ -5,14 +5,7 @@ export const studentApi = createApi({
 
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:5000/students",
-    credentials: "include", // IMPORTANT for refresh token cookies
-    prepareHeaders: (headers, { getState }) => {
-      const token = getState().auth?.accessToken;
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
+    credentials: "include", // ✅ VERY IMPORTANT (cookies auto send)
   }),
 
   tagTypes: ["Student", "Feedback"],
@@ -35,13 +28,15 @@ export const studentApi = createApi({
         body: data,
       }),
     }),
-    resendOtp:builder.mutation({
-      query:(data)=>({
-        url:"/resend-otp",
-        method:"POST",
-        body:data,
-      })
+
+    resendOtp: builder.mutation({
+      query: (data) => ({
+        url: "/resend-otp",
+        method: "POST",
+        body: data,
+      }),
     }),
+
     loginStudent: builder.mutation({
       query: (data) => ({
         url: "/login",
@@ -50,11 +45,16 @@ export const studentApi = createApi({
       }),
     }),
 
-    refreshToken: builder.mutation({
+    logoutStudent: builder.mutation({
       query: () => ({
-        url: "/refresh",
+        url: "/logout",
         method: "POST",
       }),
+    }),
+
+    /* 🔥 VERY IMPORTANT: restore auth on refresh */
+    getMe: builder.query({
+      query: () => "/me",
     }),
 
     forgotPassword: builder.mutation({
@@ -82,7 +82,9 @@ export const studentApi = createApi({
 
     getStudentById: builder.query({
       query: (id) => `/${id}`,
-      providesTags: (result, error, id) => [{ type: "Student", id }],
+      providesTags: (result, error, id) => [
+        { type: "Student", id },
+      ],
     }),
 
     deleteStudent: builder.mutation({
@@ -116,7 +118,8 @@ export const {
   useVerifyEmailMutation,
   useResendOtpMutation,
   useLoginStudentMutation,
-  useRefreshTokenMutation,
+  useLogoutStudentMutation,
+  useGetMeQuery,
   useForgotPasswordMutation,
   useResetPasswordMutation,
 

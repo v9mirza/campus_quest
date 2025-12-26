@@ -24,7 +24,7 @@ const CourseSchema = new Schema(
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'superAdmin',
-      required: true
+      required: true,
     }
   },
   { timestamps: true }

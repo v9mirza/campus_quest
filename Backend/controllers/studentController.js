@@ -15,6 +15,7 @@ exports.registerStudent = async (req, res) => {
       emailVerificationCode: otp,
       emailVerificationExpires: Date.now() + 10 * 60 * 1000 // 10 min
     });
+    await student.save();
    await sendEmail(
   student.email,
   "Verify your Campus Quest email",
@@ -194,14 +195,44 @@ exports.forgotPassword = async (req, res) => {
     student.resetTokenExpiry = Date.now() + 15 * 60 * 1000;
     await student.save();
 
-    const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+    const resetLink = `http://localhost:3000/student/reset-password/${resetToken}`;
 
-    await sendEmail(
-      email,
-      "Reset Your Campus Quest Password",
-      `<p>Hello ${student.name},</p>
-       <p><a href="${resetLink}">Reset Password</a></p>`
-    );
+   await sendEmail(
+  email,
+  "Reset Your Campus Quest Password",
+  `
+  <div style="font-family: Arial, sans-serif; max-width: 420px; margin: auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+    <h2 style="color:#4F46E5; margin-bottom: 10px;">Campus Quest</h2>
+
+    <p style="font-size: 15px;">Hello <strong>${student.name}</strong>,</p>
+
+    <p style="font-size: 14px; color: #374151;">
+      Click the button below to reset your password.
+    </p>
+
+    <a
+      href="${resetLink}"
+      style="
+        display: inline-block;
+        margin: 16px 0;
+        padding: 10px 20px;
+        background: #4F46E5;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 14px;
+      "
+    >
+      Reset Password
+    </a>
+
+    <p style="font-size: 12px; color: #6b7280;">
+      This link is valid for 15 minutes.
+    </p>
+  </div>
+  `
+);
 
     res.json({ msg: "Password reset email sent" });
   } catch (err) {
@@ -213,10 +244,8 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
-
     const decoded = jwt.verify(token, process.env.RESET_PASSWORD_SECRET);
     const student = await Student.findById(decoded.id);
-
     if (
       !student ||
       student.resetToken !== token ||
