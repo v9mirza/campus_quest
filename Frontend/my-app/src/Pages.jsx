@@ -3,7 +3,7 @@ import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 
 /* AUTH */
 import Login from "./pages/Login";
-import Signup from "./pages/Dashboards/Student/Signup";
+import Signup from "./pages/student/auth/Signup";
 
 /* SUPER ADMIN */
 import SuperAdminDashboard from "./pages/Dashboards/superAdmin/SuperAdminDashboard";
@@ -19,7 +19,7 @@ import FacultyDashboard from "./pages/Dashboards/Faculty/FacultyDashboard";
 import FacultyProfile from "./pages/Dashboards/Faculty/FacultyProfile";
 
 /* STUDENT */
-import StudentDashboard from "./pages/Dashboards/Student/StudentDashboard";
+import StudentDashboard from "./pages/student/dashboard/Dashboard";
 import StudentLogin from "./pages/student/auth/StudentLogin";
 
 /* QUIZ / EXTRA */
