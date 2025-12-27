@@ -61,6 +61,7 @@ const QuizCtrl = {
                 createdBy:req.user._id,
             });
             await newQuiz.save(); 
+            
             const facultyId =req.user._id;
             const newFacultyQuiz = await Faculty.findById(facultyId);
             newFacultyQuiz.createdQuizzes.push(newQuiz._id);

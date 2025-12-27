@@ -20,6 +20,7 @@ import FacultyProfile from "./pages/Dashboards/Faculty/FacultyProfile";
 
 /* STUDENT */
 import StudentDashboard from "./pages/Dashboards/Student/StudentDashboard";
+import StudentLogin from "./pages/student/auth/StudentLogin";
 
 /* QUIZ / EXTRA */
 import CreateQuiz from "./pages/CreateQuiz";
@@ -33,8 +34,7 @@ const Pages = () => {
     <Routes>
       {/* AUTH */}
       <Route path="/" element={<Login />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/students/signup" element={<Signup />} />
+      {/* <Route path="/login" element={<Login />} /> */}
 
       {/* SUPER ADMIN */}
       <Route
@@ -127,6 +127,11 @@ const Pages = () => {
           </ProtectedRoute>
         }
       />
+<Route path="/student/login" 
+element={ <StudentLogin/>
+}/>
+
+ <Route path="/student/signup" element={<Signup />} />
 
       {/* QUIZ / EXTRA */}
       <Route path="/create-quiz" element={<CreateQuiz />} />

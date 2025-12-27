@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./Auth.css";
+import "./StudentSignup.css";
+
 import { useDispatch, useSelector } from "react-redux";
 import {
   setStudentField,
@@ -11,12 +12,13 @@ import { useGetAllDepartmentsQuery } from "../../../redux/services/departmentApi
 import { useGetAllCoursesQuery } from "../../../redux/services/coursesApi";
 import { setCredentials } from "../../../redux/features/authSlice";
 
-
 const Signup = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // ✅ SAFE destructuring
+  /* =====================
+     REDUX STATE (SAFE)
+     ===================== */
   const {
     enrollmentNumber = "",
     name = "",
@@ -35,30 +37,30 @@ const Signup = () => {
   const [registerStudent, { isLoading }] =
     useRegisterStudentMutation();
 
-  // 🔹 APIs
-  const { data: departments, isLoading: departmentsLoading } =
+  /* =====================
+     API CALLS
+     ===================== */
+  const { data: departments, isLoading: deptLoading } =
     useGetAllDepartmentsQuery();
 
   const { data: courses } = useGetAllCoursesQuery();
 
-  // 🔹 Department list
   const departmentList =
     departments?.data?.[0]?.departmentNames || [];
 
-  // 🔹 All courses
   const allCourses = courses?.courses || [];
 
-  // 🔹 Filter courses by department
   const filteredCourses = allCourses.filter(
     (c) => c.department === department
   );
 
-  // 🔹 Selected course object
   const selectedCourseObj = filteredCourses.find(
     (c) => c.courseName.includes(course)
   );
 
-  // 🔹 Handle input change
+  /* =====================
+     HANDLERS
+     ===================== */
   const handleChange = (e) => {
     dispatch(
       setStudentField({
@@ -68,7 +70,6 @@ const Signup = () => {
     );
   };
 
-  // 🔹 Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -96,7 +97,9 @@ const Signup = () => {
         group,
         password,
       };
+
       const res = await registerStudent(payload).unwrap();
+
       dispatch(
         setCredentials({
           user: res.user,
@@ -104,32 +107,41 @@ const Signup = () => {
         })
       );
 
-      if (res) {
-        dispatch(resetStudentForm());
-        console.log(email);
-        navigate("/student/verifyOtp", { state: { email } });
-      }
+      dispatch(resetStudentForm());
+
+      navigate("/student/verifyOtp", {
+        state: { email },
+      });
     } catch (err) {
       alert(err?.data?.error || "Signup failed");
     }
   };
 
+  /* =====================
+     JSX
+     ===================== */
   return (
-    <div className="auth-page">
-      <div className="auth-container" style={{ maxWidth: "900px" }}>
-        <h2 className="auth-title">Student Registration</h2>
-        <p className="auth-subtitle">
+    <div className="student-signup-page">
+      <div className="student-signup-container">
+        <h2 className="student-signup-title">
+          Student Registration
+        </h2>
+        <p className="student-signup-subtitle">
           Join the Campus Quest community
         </p>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="signup-grid">
+        <form
+          className="student-signup-form"
+          onSubmit={handleSubmit}
+        >
+          {/* ===== BASIC DETAILS ===== */}
+          <div className="student-signup-grid">
             <input
               name="enrollmentNumber"
               placeholder="Enrollment Number"
               value={enrollmentNumber}
               onChange={handleChange}
-              className="auth-input"
+              className="student-signup-input"
               required
             />
 
@@ -138,7 +150,7 @@ const Signup = () => {
               placeholder="Full Name"
               value={name}
               onChange={handleChange}
-              className="auth-input"
+              className="student-signup-input"
               required
             />
 
@@ -148,7 +160,7 @@ const Signup = () => {
               placeholder="student@student.iul.ac.in"
               value={email}
               onChange={handleChange}
-              className="auth-input"
+              className="student-signup-input"
               required
             />
 
@@ -157,7 +169,7 @@ const Signup = () => {
               placeholder="Mobile Number"
               value={mobileNumber}
               onChange={handleChange}
-              className="auth-input"
+              className="student-signup-input"
               required
             />
 
@@ -165,7 +177,7 @@ const Signup = () => {
               name="gender"
               value={gender}
               onChange={handleChange}
-              className="auth-select"
+              className="student-signup-select"
               required
             >
               <option value="">Select Gender</option>
@@ -174,13 +186,13 @@ const Signup = () => {
               <option value="Other">Other</option>
             </select>
 
-            {/* 🔹 Department */}
+            {/* ===== DEPARTMENT ===== */}
             <select
               name="department"
               value={department}
               onChange={handleChange}
-              className="auth-select"
-              disabled={departmentsLoading}
+              className="student-signup-select"
+              disabled={deptLoading}
               required
             >
               <option value="">Select Department</option>
@@ -191,17 +203,16 @@ const Signup = () => {
               ))}
             </select>
 
-            {/* 🔹 Course */}
+            {/* ===== COURSE ===== */}
             <select
               name="course"
               value={course}
               onChange={handleChange}
-              className="auth-select"
+              className="student-signup-select"
               disabled={!department}
               required
             >
               <option value="">Select Course</option>
-
               {filteredCourses.map((c) =>
                 c.courseName.map((singleCourse, idx) => (
                   <option
@@ -214,12 +225,12 @@ const Signup = () => {
               )}
             </select>
 
-            {/* 🔹 YEAR (Course duration) */}
+            {/* ===== YEAR ===== */}
             <select
               name="year"
               value={year}
               onChange={handleChange}
-              className="auth-select"
+              className="student-signup-select"
               disabled={!selectedCourseObj}
               required
             >
@@ -235,26 +246,23 @@ const Signup = () => {
               name="semester"
               value={semester}
               onChange={handleChange}
-              className="auth-select"
+              className="student-signup-select"
               required
             >
               <option value="">Select Semester</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
             </select>
 
-            {/* 🔹 GROUP */}
+            {/* ===== GROUP ===== */}
             <select
               name="group"
               value={group}
               onChange={handleChange}
-              className="auth-select"
+              className="student-signup-select"
               disabled={!selectedCourseObj}
               required
             >
@@ -267,14 +275,15 @@ const Signup = () => {
             </select>
           </div>
 
-          <div className="signup-grid">
+          {/* ===== PASSWORD ===== */}
+          <div className="student-signup-grid">
             <input
               name="password"
               type="password"
               placeholder="Password"
               value={password}
               onChange={handleChange}
-              className="auth-input"
+              className="student-signup-input"
               required
             />
 
@@ -284,21 +293,22 @@ const Signup = () => {
               placeholder="Confirm Password"
               value={confirmPassword}
               onChange={handleChange}
-              className="auth-input"
+              className="student-signup-input"
               required
             />
           </div>
 
-          <button className="auth-button" disabled={isLoading}>
+          <button
+            className="student-signup-btn"
+            disabled={isLoading}
+          >
             {isLoading ? "Signing Up..." : "Sign Up"}
           </button>
         </form>
 
-        <div className="auth-footer">
+        <div className="student-signup-footer">
           Already have an account?
-          <Link to="/student/login" className="auth-link">
-            Login
-          </Link>
+          <Link to="/student/login"> Login</Link>
         </div>
       </div>
     </div>

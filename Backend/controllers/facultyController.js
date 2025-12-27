@@ -260,7 +260,6 @@ exports.getFacultyProfile = async (req, res) => {
 exports.facultyLogin = async (req, res) => {
   try {
     const { facultyId, password } = req.body;
-
     if (!facultyId || !password) {
       return res.status(400).json({ msg: "Faculty ID and password are required" });
     }
@@ -291,7 +290,7 @@ exports.facultyLogin = async (req, res) => {
       role: "faculty",
       department: faculty.department
     };
-
+    console.log(payload)
     const accessToken = createAccessToken(payload);
     const refreshToken = createRefreshToken(payload);
 

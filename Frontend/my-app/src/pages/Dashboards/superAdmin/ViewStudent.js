@@ -1,85 +1,62 @@
-
-
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ViewStudent.css";
 
+import {
+  useGetAllStudentsQuery,
+  useDeleteStudentMutation,
+} from "../../../redux/services/studentApi";
+
 const ViewStudent = () => {
-  const [students, setStudents] = useState([]);
+  const navigate = useNavigate();
+
+  /* =====================
+     LOCAL UI STATE
+     ===================== */
   const [search, setSearch] = useState("");
   const [expandedCourse, setExpandedCourse] = useState(null);
   const [sortOrder, setSortOrder] = useState("asc");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  const navigate = useNavigate();
+  /* =====================
+     API CALLS (RTK QUERY)
+     ===================== */
+  const {
+    data,
+    isLoading,
+    error,
+    refetch,
+  } = useGetAllStudentsQuery();
 
-  // ✅ Fetch students on load
-  useEffect(() => {
-    fetchStudents();
-  }, []);
+  const [deleteStudent] = useDeleteStudentMutation();
 
-  const fetchStudents = async () => {
-    setLoading(true);
-    setError("");
+  const students = Array.isArray(data)
+    ? data
+    : data?.students || [];
 
-    try {
-      const res = await fetch("http://localhost:5000/students", {
-        method: "GET",
-        credentials: "include", // send cookies
-      });
+  /* =====================
+     HANDLERS
+     ===================== */
+  const handleEdit = (id) => navigate(`/students/edit/${id}`);
 
-      if (!res.ok) {
-        if (res.status === 401) {
-          navigate("/login"); // unauthorized → go to login
-          return;
-        }
-        const data = await res.json();
-        setError(data.msg || data.message || "Failed to fetch students");
-        setLoading(false);
-        return;
-      }
+  const confirmDelete = (id, name) =>
+    setDeleteConfirm({ id, name });
 
-      const data = await res.json();
-      setStudents(Array.isArray(data) ? data : data.students || []);
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setError("Server error");
-      setLoading(false);
-    }
-  };
+  const cancelDelete = () => setDeleteConfirm(null);
 
-  // ✅ Delete student
   const handleDelete = async (id, name) => {
     try {
-      const res = await fetch(`http://localhost:5000/students/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.msg || data.message || "Failed to delete student");
-        return;
-      }
-
-      setStudents((prev) => prev.filter((s) => s._id !== id));
+      await deleteStudent(id).unwrap();
       setDeleteConfirm(null);
       alert(`✅ Student "${name}" deleted successfully`);
     } catch (err) {
-      console.error(err);
-      alert("❌ Server error while deleting student");
+      alert("❌ Failed to delete student");
     }
   };
 
-  const confirmDelete = (id, name) => setDeleteConfirm({ id, name });
-  const cancelDelete = () => setDeleteConfirm(null);
-
-  const handleEdit = (id) => navigate(`/students/edit/${id}`);
-
-  // ✅ Filter + Sort
+  /* =====================
+     FILTER + SORT
+     ===================== */
   const filtered = students
     .filter((s) =>
       `${s.name} ${s.studentId} ${s.email} ${s.group} ${s.course}`
@@ -92,14 +69,19 @@ const ViewStudent = () => {
         : b.name.localeCompare(a.name)
     );
 
-  // ✅ Group by course
+  /* =====================
+     GROUP BY COURSE
+     ===================== */
   const groupedByCourse = filtered.reduce((acc, student) => {
     acc[student.course] = acc[student.course] || [];
     acc[student.course].push(student);
     return acc;
   }, {});
 
-  if (loading)
+  /* =====================
+     LOADING / ERROR UI
+     ===================== */
+  if (isLoading)
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
@@ -107,11 +89,21 @@ const ViewStudent = () => {
       </div>
     );
 
-  if (error) return <p className="status-text error">{error}</p>;
+  if (error)
+    return (
+      <div className="status-text error">
+        Failed to load students
+        <button onClick={refetch}>Retry</button>
+      </div>
+    );
 
+  /* =====================
+     JSX
+     ===================== */
   return (
     <div className="student-page">
-      {/* Delete Confirmation Modal */}
+
+      {/* DELETE CONFIRM MODAL */}
       {deleteConfirm && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -121,18 +113,24 @@ const ViewStudent = () => {
             <div className="modal-body">
               <p>
                 Are you sure you want to delete student{" "}
-                <strong>{deleteConfirm.name}</strong>? This action cannot be
-                undone.
+                <strong>{deleteConfirm.name}</strong>?
+                This action cannot be undone.
               </p>
             </div>
             <div className="modal-actions">
-              <button className="modal-cancel-btn" onClick={cancelDelete}>
+              <button
+                className="modal-cancel-btn"
+                onClick={cancelDelete}
+              >
                 Cancel
               </button>
               <button
                 className="modal-confirm-btn"
                 onClick={() =>
-                  handleDelete(deleteConfirm.id, deleteConfirm.name)
+                  handleDelete(
+                    deleteConfirm.id,
+                    deleteConfirm.name
+                  )
                 }
               >
                 Delete
@@ -147,14 +145,15 @@ const ViewStudent = () => {
         <div className="header-content">
           <h1 className="page-title">Student Management</h1>
           <p className="page-subtitle">
-            View and manage all registered students ({students.length} total)
+            View and manage all registered students (
+            {students.length} total)
           </p>
         </div>
         <button
           className="add-btn"
           onClick={() => navigate("/students/signup")}
         >
-          <span className="btn-icon">+</span> Add New Student
+          + Add New Student
         </button>
       </div>
 
@@ -169,10 +168,10 @@ const ViewStudent = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+
         <div className="control-actions">
-          <label htmlFor="sort-select">Sort by:</label>
+          <label>Sort by:</label>
           <select
-            id="sort-select"
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
           >
@@ -180,9 +179,7 @@ const ViewStudent = () => {
             <option value="desc">Name (Z → A)</option>
           </select>
 
-          <button onClick={fetchStudents} title="Refresh list">
-            Refresh
-          </button>
+          <button onClick={refetch}>Refresh</button>
         </div>
       </div>
 
@@ -199,12 +196,17 @@ const ViewStudent = () => {
               <div
                 className="course-header"
                 onClick={() =>
-                  setExpandedCourse(expandedCourse === course ? null : course)
+                  setExpandedCourse(
+                    expandedCourse === course ? null : course
+                  )
                 }
               >
                 <h3>{course}</h3>
-                <span>{groupedByCourse[course].length} students</span>
+                <span>
+                  {groupedByCourse[course].length} students
+                </span>
               </div>
+
               {expandedCourse === course && (
                 <table className="student-table">
                   <thead>
@@ -228,8 +230,16 @@ const ViewStudent = () => {
                         <td>{s.course}</td>
                         <td>{s.group || "—"}</td>
                         <td>
-                          <button onClick={() => handleEdit(s._id)}>Edit</button>
-                          <button onClick={() => confirmDelete(s._id, s.name)}>
+                          <button
+                            onClick={() => handleEdit(s._id)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() =>
+                              confirmDelete(s._id, s.name)
+                            }
+                          >
                             Delete
                           </button>
                         </td>
@@ -248,7 +258,10 @@ const ViewStudent = () => {
         <p>
           Showing <strong>{filtered.length}</strong> of{" "}
           <strong>{students.length}</strong> students across{" "}
-          <strong>{Object.keys(groupedByCourse).length}</strong> courses
+          <strong>
+            {Object.keys(groupedByCourse).length}
+          </strong>{" "}
+          courses
         </p>
       </div>
     </div>

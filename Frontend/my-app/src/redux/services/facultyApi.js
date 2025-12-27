@@ -4,14 +4,10 @@ export const facultyApi = createApi({
   reducerPath: "facultyApi",
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:5000/api/faculty",
-    credentials: "include", // 👈 cookies (access + refresh token)
+    credentials: "include",
   }),
   tagTypes: ["Faculty"],
   endpoints: (builder) => ({
-
-    /* =========================
-       AUTH
-       ========================= */
 
     loginFaculty: builder.mutation({
       query: (data) => ({

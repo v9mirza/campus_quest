@@ -4,7 +4,8 @@ import "./Auth.css";
 import { useLoginStudentMutation } from "../../../redux/services/studentApi";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../../../redux/features/authSlice";
-const Login = () => {
+
+const StudentLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -16,61 +17,45 @@ const Login = () => {
     password: "",
   });
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const res = await loginStudent(formData).unwrap();
-      dispatch(
-        setCredentials({
-          user: res.user,
-          role: "student",
-        })
-      );
-      // example redirect after login
+      dispatch(setCredentials({ user: res.user, role: "student" }));
       navigate("/student/dashboard");
-    } catch (err) {
-      console.error("Login failed:", err);
-    }
+    } catch {}
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
-        <h2 className="auth-title">Student Login</h2>
-        <p className="auth-subtitle">
+    <div className="student-login-page">
+      <div className="student-login-card">
+        <h2 className="student-login-title">Student Login</h2>
+        <p className="student-login-subtitle">
           Login to access your student portal
         </p>
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email">Student ID or Email</label>
+        <form className="student-login-form" onSubmit={handleSubmit}>
+          <div className="student-login-group">
+            <label>Email or Student ID</label>
             <input
-              type="text"
-              id="identifier"
               name="email"
-              className="auth-input"
-              placeholder="Enter your Student ID or Email"
+              className="student-login-input"
+              placeholder="Enter your email or ID"
               value={formData.email}
               onChange={handleChange}
               required
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
+          <div className="student-login-group">
+            <label>Password</label>
             <input
               type="password"
-              id="password"
               name="password"
-              className="auth-input"
+              className="student-login-input"
               placeholder="Enter your password"
               value={formData.password}
               onChange={handleChange}
@@ -78,38 +63,32 @@ const Login = () => {
             />
           </div>
 
-          {/* Forgot password */}
-          <div className="forgot-password">
-            <Link to="/student/forgot-password" className="auth-link">
-              Forgot password?
-            </Link>
+          <div className="student-login-forgot">
+            <Link to="/student/forgot-password">Forgot password?</Link>
           </div>
 
           <button
             type="submit"
-            className="auth-button"
+            className="student-login-btn"
             disabled={isLoading}
           >
             {isLoading ? "Logging in..." : "Login"}
           </button>
 
           {error && (
-            <p style={{ color: "red", marginTop: "10px" }}>
+            <p className="student-login-error">
               {error?.data?.msg || "Login failed"}
             </p>
           )}
         </form>
 
-        <div className="auth-footer">
-          Don't have an account?
-          <Link to="/student/signup" className="auth-link">
-            {" "}
-            Sign Up
-          </Link>
+        <div className="student-login-footer">
+          Don’t have an account?
+          <Link to="/student/signup"> Sign Up</Link>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default StudentLogin;

@@ -255,7 +255,7 @@ return (
       <input
         type="number"
         placeholder="Duration (minutes)"
-        value={durationMinutes}
+        value={durationMinutes||""}
         onChange={(e) =>
           dispatch(setDurationMinutes(Number(e.target.value)))
         }
