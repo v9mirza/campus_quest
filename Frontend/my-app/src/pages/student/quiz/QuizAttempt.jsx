@@ -35,6 +35,7 @@ const QuizAttempt = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(QUIZ_TIME);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   /* =========================
      START QUIZ (fullscreen)
@@ -52,7 +53,7 @@ const QuizAttempt = () => {
      TIMER
   ========================= */
   useEffect(() => {
-    if (!hasStarted) return;
+    if (!hasStarted || isSubmitted) return;
 
     if (timeLeft === 0) {
       handleSubmit();
@@ -64,7 +65,7 @@ const QuizAttempt = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, hasStarted]);
+  }, [timeLeft, hasStarted, isSubmitted]);
 
   /* =========================
      HANDLERS
@@ -77,6 +78,9 @@ const QuizAttempt = () => {
   };
 
   const handleSubmit = () => {
+    if (isSubmitted) return;
+    setIsSubmitted(true);
+
     if (document.fullscreenElement) {
       document.exitFullscreen();
     }

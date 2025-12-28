@@ -24,6 +24,11 @@ import Signup from "./pages/student/auth/Signup";
 import ForgotPassword from "./pages/student/auth/ForgotPassword";
 import ResetPassword from "./pages/student/auth/ResetPassword";
 
+/* STUDENT QUIZ */
+import QuizDetails from "./pages/student/quiz/QuizDetails";
+import QuizAttempt from "./pages/student/quiz/QuizAttempt";
+import FeedbackPage from "./pages/student/quiz/FeedbackPage";
+
 /* EXTRA */
 import CreateQuiz from "./pages/CreateQuiz";
 import QuestionsPage from "./pages/QuestionsPage";
@@ -46,7 +51,6 @@ const Pages = () => {
           </ProtectedRoute>
         }
       />
-      <Route path="/superadmin/add-faculty" element={<AddFaculty />} />
       <Route
         path="/superadmin/profile"
         element={
@@ -68,6 +72,14 @@ const Pages = () => {
         element={
           <ProtectedRoute allowedRoles={["superadmin"]}>
             <AddCourse />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/add-faculty"
+        element={
+          <ProtectedRoute allowedRoles={["superadmin"]}>
+            <AddFaculty />
           </ProtectedRoute>
         }
       />
@@ -112,12 +124,40 @@ const Pages = () => {
       <Route path="/student/forgot-password" element={<ForgotPassword />} />
       <Route path="/student/reset-password" element={<ResetPassword />} />
 
-      {/* STUDENT DASHBOARD (PROTECTED) */}
+      {/* STUDENT DASHBOARD */}
       <Route
         path="/student/dashboard"
         element={
           <ProtectedRoute allowedRoles={["student"]}>
             <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* STUDENT QUIZ FLOW */}
+      <Route
+        path="/student/quiz/:quizId"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <QuizDetails />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/student/quiz/:quizId/attempt"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <QuizAttempt />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/student/quiz/:quizId/feedback"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <FeedbackPage />
           </ProtectedRoute>
         }
       />
