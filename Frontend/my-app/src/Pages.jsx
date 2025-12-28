@@ -24,7 +24,7 @@ import Signup from "./pages/student/auth/Signup";
 import ForgotPassword from "./pages/student/auth/ForgotPassword";
 import ResetPassword from "./pages/student/auth/ResetPassword";
 
-/* QUIZ / EXTRA */
+/* EXTRA */
 import CreateQuiz from "./pages/CreateQuiz";
 import QuestionsPage from "./pages/QuestionsPage";
 import AI from "./pages/AI";
@@ -34,7 +34,7 @@ const Unauthorized = () => <h2>Access Denied</h2>;
 const Pages = () => {
   return (
     <Routes>
-      {/* ROOT / AUTH */}
+      {/* ROOT */}
       <Route path="/" element={<Login />} />
 
       {/* SUPER ADMIN */}
@@ -46,9 +46,7 @@ const Pages = () => {
           </ProtectedRoute>
         }
       />
-
       <Route path="/superadmin/add-faculty" element={<AddFaculty />} />
-
       <Route
         path="/superadmin/profile"
         element={
@@ -57,7 +55,6 @@ const Pages = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/superadmin/course-management"
         element={
@@ -66,7 +63,6 @@ const Pages = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/superadmin/courses/add"
         element={
@@ -75,7 +71,6 @@ const Pages = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/superadmin/view-faculty"
         element={
@@ -84,7 +79,6 @@ const Pages = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/students"
         element={
@@ -103,7 +97,6 @@ const Pages = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/faculty/profile"
         element={
@@ -121,7 +114,7 @@ const Pages = () => {
 
       {/* STUDENT DASHBOARD (PROTECTED) */}
       <Route
-        path="/student"
+        path="/student/dashboard"
         element={
           <ProtectedRoute allowedRoles={["student"]}>
             <StudentDashboard />
@@ -129,7 +122,7 @@ const Pages = () => {
         }
       />
 
-      {/* QUIZ / EXTRA */}
+      {/* EXTRA */}
       <Route path="/create-quiz" element={<CreateQuiz />} />
       <Route path="/questions" element={<QuestionsPage />} />
       <Route path="/chat" element={<AI />} />
