@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import { useSelector } from "react-redux";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 
 /* AUTH */
@@ -21,30 +22,43 @@ import FacultyProfile from "./pages/Dashboards/Faculty/FacultyProfile";
 /* STUDENT */
 import StudentDashboard from "./pages/student/dashboard/Dashboard";
 import StudentLogin from "./pages/student/auth/StudentLogin";
+import ForgotPassword from "./pages/student/auth/ForgotPassword";
+import ResetPassword from "./pages/student/auth/ResetPassword";
+import Profile from "./pages/student/profile/Profile";
 
 /* QUIZ / EXTRA */
 import CreateQuiz from "./pages/CreateQuiz";
 import QuestionsPage from "./pages/QuestionsPage";
 import AI from "./pages/AI";
+import QuizDetails from "./pages/student/quiz/QuizDetails";
+import Certificates from "./pages/student/profile/Certificates";
+import Home from "./pages/Home";
 
 const Unauthorized = () => <h2>Access Denied</h2>;
 
 const Pages = () => {
+   const { user, role, isAuthenticated } = useSelector(
+    (state) => state.auth
+  );
   return (
     <Routes>
-      {/* AUTH */}
-      <Route path="/" element={<Login />} />
+    
+    {role==="student" && isAuthenticated && <Route path="/" element={<StudentDashboard />} />}
+      {role==="faculty" && isAuthenticated && <Route path="/" element={<FacultyDashboard />} />}
+      {role==="superadmin" && isAuthenticated && <Route path="/" element={<SuperAdminDashboard />} />}
+    
+
       {/* <Route path="/login" element={<Login />} /> */}
 
       {/* SUPER ADMIN */}
-      <Route
+      {/* <Route
         path="/superadmin"
         element={
           <ProtectedRoute allowedRoles={["superadmin"]}>
             <SuperAdminDashboard />
           </ProtectedRoute>
         }
-      />
+      /> */}
 
       <Route
         path="/superadmin/add-faculty"
@@ -100,14 +114,14 @@ const Pages = () => {
       />
 
       {/* FACULTY */}
-      <Route
+      {/* <Route
         path="/faculty"
         element={
           <ProtectedRoute allowedRoles={["faculty"]}>
             <FacultyDashboard />
           </ProtectedRoute>
         }
-      />
+      /> */}
 
       <Route
         path="/faculty/profile"
@@ -119,18 +133,40 @@ const Pages = () => {
       />
 
       {/* STUDENT */}
-      <Route
+      {/* <Route
         path="/student"
         element={
           <ProtectedRoute allowedRoles={["student"]}>
             <StudentDashboard />
           </ProtectedRoute>
         }
+      /> */}
+
+      <Route 
+      path="/student/profile"
+      element={
+        <ProtectedRoute allowedRoles={["student"]}>
+          <Profile />
+        </ProtectedRoute>
+      }
       />
+
+<Route 
+path="/student/certificates"
+element={
+  <ProtectedRoute allowedRoles={["student"]}>
+    <Certificates />
+  </ProtectedRoute>
+}
+/>
+<Route path="/student/quiz/:quizId" element={<QuizDetails/>}/>
+
 <Route path="/student/login" 
 element={ <StudentLogin/>
 }/>
 
+<Route path="/student/forgot-password" element={<ForgotPassword />} />
+<Route path="/student/reset-password/:token" element={<ResetPassword />} />
  <Route path="/student/signup" element={<Signup />} />
 
       {/* QUIZ / EXTRA */}

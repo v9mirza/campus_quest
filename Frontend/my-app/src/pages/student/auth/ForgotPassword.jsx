@@ -13,7 +13,7 @@ const ForgotPassword = () => {
     alert("Password reset link sent to your email");
     }
     catch(err){
-      console.log(err);
+      console.log(err); 
     }
   };
 
