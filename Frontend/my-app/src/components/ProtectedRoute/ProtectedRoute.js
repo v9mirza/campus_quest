@@ -14,10 +14,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Check user for each allowed role
         for (let role of allowedRoles) {
           const res = await fetch(roleToMeEndpoint[role], {
-            credentials: "include" // send cookies
+            credentials: "include"
           });
 
           if (res.ok) {
@@ -27,7 +26,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
           }
         }
 
-        // If no role is valid
         setAuthorized(false);
         setLoading(false);
       } catch (err) {
@@ -40,20 +38,16 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }, [allowedRoles]);
 
   // -------------------------------
-  // TEMPORARY TESTING CODE
-  // This allows dashboard to open
-  // without checking login
+  // TEMPORARY TESTING MODE
   // -------------------------------
-
   if (loading) {
     return <p>Checking authentication...</p>;
   }
 
-  return children; // allow access for testing
+  return children;
 
   // -------------------------------
-  // AFTER TESTING (IMPORTANT)
-  // Replace the code above with:
+  // AFTER TESTING (RESTORE THIS)
   //
   // if (loading) return <p>Checking authentication...</p>;
   // if (!authorized) return <Navigate to="/student/login" replace />;

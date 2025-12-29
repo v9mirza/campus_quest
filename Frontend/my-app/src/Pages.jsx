@@ -26,12 +26,18 @@ import ForgotPassword from "./pages/student/auth/ForgotPassword";
 import ResetPassword from "./pages/student/auth/ResetPassword";
 import Profile from "./pages/student/profile/Profile";
 import Certificates from "./pages/student/profile/Certificates";
+
+/* QUIZ */
 import QuizDetails from "./pages/student/quiz/QuizDetails";
+import QuizAttempt from "./pages/student/quiz/QuizAttempt";
+/* ✅ ADDED */
+import FeedbackPage from "./pages/student/quiz/FeedbackPage";
 
 /* EXTRA */
 import CreateQuiz from "./pages/CreateQuiz";
 import QuestionsPage from "./pages/QuestionsPage";
 import AI from "./pages/AI";
+import Home from "./pages/Home";
 
 const Unauthorized = () => <h2>Access Denied</h2>;
 
@@ -40,32 +46,8 @@ const Pages = () => {
 
   return (
     <Routes>
-      
-      <Route
-        path="/"
-        element={
-          isAuthenticated ? (
-            role === "student" ? (
-              <Navigate to="/student/dashboard" />
-            ) : role === "faculty" ? (
-              <Navigate to="/faculty/dashboard" />
-            ) : role === "superadmin" ? (
-              <Navigate to="/superadmin/dashboard" />
-            ) : (
-              <Navigate to="/unauthorized" />
-            )
-          ) : (
-            <Login />
-          )
-        }
-      />
-
-      {/* PUBLIC AUTH */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/student/login" element={<StudentLogin />} />
-      <Route path="/student/signup" element={<Signup />} />
-      <Route path="/student/forgot-password" element={<ForgotPassword />} />
-      <Route path="/student/reset-password/:token" element={<ResetPassword />} />
+      {/* ROOT */}
+      <Route path="/" element={<Login />} />
 
       {/* SUPER ADMIN */}
       <Route
@@ -73,6 +55,14 @@ const Pages = () => {
         element={
           <ProtectedRoute allowedRoles={["superadmin"]}>
             <SuperAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/add-faculty"
+        element={
+          <ProtectedRoute allowedRoles={["superadmin"]}>
+            <AddFaculty />
           </ProtectedRoute>
         }
       />
@@ -145,7 +135,13 @@ const Pages = () => {
         }
       />
 
-      {/* STUDENT */}
+      {/* STUDENT AUTH */}
+      <Route path="/student/login" element={<StudentLogin />} />
+      <Route path="/student/signup" element={<Signup />} />
+      <Route path="/student/forgot-password" element={<ForgotPassword />} />
+      <Route path="/student/reset-password/:token" element={<ResetPassword />} />
+
+      {/* STUDENT DASHBOARD */}
       <Route
         path="/student/dashboard"
         element={
@@ -170,6 +166,8 @@ const Pages = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* QUIZ */}
       <Route
         path="/student/quiz/:quizId"
         element={
@@ -178,11 +176,30 @@ const Pages = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/student/quiz/attempt/:quizId"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <QuizAttempt />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ✅ ADDED FEEDBACK ROUTE */}
+      <Route
+        path="/student/quiz/:quizId/feedback"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <FeedbackPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* EXTRA */}
       <Route path="/create-quiz" element={<CreateQuiz />} />
       <Route path="/questions" element={<QuestionsPage />} />
       <Route path="/chat" element={<AI />} />
+      <Route path="/home" element={<Home />} />
 
       {/* FALLBACK */}
       <Route path="/unauthorized" element={<Unauthorized />} />

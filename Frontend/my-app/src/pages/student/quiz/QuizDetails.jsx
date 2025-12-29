@@ -1,28 +1,13 @@
-import {useEffect,useState} from "react";
-import { useParams } from "react-router-dom";
-import "./quizDetails.css";
-import {useLazyGetQuizByIdQuery} from "../../../redux/services/quizApi";
+import { useParams, useNavigate } from "react-router-dom";
+import "./QuizDetails.css"; 
 
 const QuizDetails = () => {
   const { quizId } = useParams();
- const [quiz,setQuiz] = useState(null);
-  const [useGetQuizById, { data: quizData, isLoading, isError }] = [];
+  const navigate = useNavigate();
 
-
- const [getQuizById] = useLazyGetQuizByIdQuery();
-
-   const fetchQuizDetails = async () => {
-    try {
-      const response = await getQuizById(quizId).unwrap();
-      setQuiz(response);
-    } catch (error) {
-      console.error("Failed to fetch quiz details:", error);
-    }
+  const startQuiz = () => {
+    navigate(`/student/quiz/attempt/${quizId}`);
   };
-
-  useEffect(() => {
-    fetchQuizDetails();
-  }, [quizId]);
 
   return (
     <div className="quiz-details">
@@ -34,15 +19,15 @@ const QuizDetails = () => {
         </p>
 
         <p className="quiz-meta">
-          <strong>Subject:</strong> java Programming
+          <strong>Subject:</strong> Java Programming
         </p>
 
         <p className="quiz-description">
-          This quiz covers basic Java Programming concepts.
+          This quiz covers basic Java programming concepts.
         </p>
 
-        <button className="quiz-register-btn">
-          Register
+        <button className="quiz-start-btn" onClick={startQuiz}>
+          Start Quiz
         </button>
       </div>
     </div>
