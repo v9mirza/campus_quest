@@ -29,6 +29,9 @@ import Certificates from "./pages/student/profile/Certificates";
 
 /* QUIZ */
 import QuizDetails from "./pages/student/quiz/QuizDetails";
+import QuizAttempt from "./pages/student/quiz/QuizAttempt";
+/* ✅ ADDED */
+import FeedbackPage from "./pages/student/quiz/FeedbackPage";
 
 /* EXTRA */
 import CreateQuiz from "./pages/CreateQuiz";
@@ -160,6 +163,24 @@ const Pages = () => {
         element={
           <ProtectedRoute allowedRoles={["student"]}>
             <QuizDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/quiz/attempt/:quizId"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <QuizAttempt />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ✅ ADDED FEEDBACK ROUTE */}
+      <Route
+        path="/student/quiz/:quizId/feedback"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <FeedbackPage />
           </ProtectedRoute>
         }
       />

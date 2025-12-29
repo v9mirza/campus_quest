@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import "./quizDetails.css";
+import "./QuizDetails.css"; 
 
 const QuizDetails = () => {
   const { quizId } = useParams();

@@ -5,8 +5,10 @@ import "./FeedbackPage.css";
 const FeedbackPage = () => {
   const navigate = useNavigate();
   const { quizId } = useParams();
-  const { state } = useLocation();
+  const location = useLocation();
   const [feedback, setFeedback] = useState("");
+
+  const state = location.state;
 
   /* =========================
      SAFETY GUARD
@@ -16,9 +18,11 @@ const FeedbackPage = () => {
       <div className="feedback-page">
         <div className="feedback-card">
           <h2>No quiz data found</h2>
+          <p>This page cannot be accessed directly.</p>
+
           <button
             className="primary"
-            onClick={() => navigate("/student/dashboard")}
+            onClick={() => navigate("/student/dashboard", { replace: true })}
           >
             Go to Dashboard
           </button>
@@ -32,11 +36,11 @@ const FeedbackPage = () => {
 
   const handleSubmitFeedback = () => {
     if (feedback.trim()) {
-      console.log("User feedback:", {
+      console.log("Quiz Feedback:", {
         quizId,
         feedback
       });
-      // later → send to backend
+      // TODO: send to backend later
     }
 
     navigate("/student/dashboard", { replace: true });
@@ -47,15 +51,13 @@ const FeedbackPage = () => {
       <div className="feedback-card">
         <h1>Quiz Submitted Successfully 🎉</h1>
 
-        {/* <p className="summary-text">
+        <p className="summary-text">
           You answered <strong>{answeredCount}</strong> out of{" "}
           <strong>{totalQuestions}</strong> questions.
-        </p> */}
-    <p>Submission complete.
-    </p>
+        </p>
 
         <p className="lock-text">
-          Your responses have been recorded.
+          Your responses are final and have been recorded.
         </p>
 
         <div className="feedback-box">
