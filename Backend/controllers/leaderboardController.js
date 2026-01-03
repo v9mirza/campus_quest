@@ -4,11 +4,12 @@ const { io } = require('../server');
 const leaderboardController = { 
     getLeaderboardByQuiz: async (req, res) => {
         try {
+            console.log("Fetching leaderboard for quiz:", req.params.quizId);
             const { quizId } = req.params;
             const leaderboardEntries = await Leaderboard.find({ quizId })
                 .populate('userId', 'name enrollmentNumber') 
                 .sort({ score: -1, timeTaken: 1 });
-io.to(quizId).emit('leaderboardData', leaderboardEntries);
+//io.to(quizId).emit('leaderboardData', leaderboardEntries);
             res.status(200).json(leaderboardEntries);
         }
         catch (error) {

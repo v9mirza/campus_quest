@@ -127,6 +127,18 @@ const handleJoin = () => {
             Register
           </button>
         )}
+        <button
+  className="leaderboard-btn"
+  onClick={() =>
+    navigate("/leaderboard", {
+      state: {
+        quizId: quizData?._id,
+      },
+    })
+  }
+>
+  🏆 View Leaderboard
+</button>
       </div>
     </div>
   );

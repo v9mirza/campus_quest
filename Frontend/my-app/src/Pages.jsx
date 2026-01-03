@@ -27,6 +27,7 @@ import ResetPassword from "./pages/student/auth/ResetPassword";
 import Profile from "./pages/student/profile/Profile";
 import Certificates from "./pages/student/profile/Certificates";
 import Otp from "./pages/student/auth/Otp";
+import Leaderboard from "./pages/student/quiz/Leaderboard";
 
 /* QUIZ */
 import QuizDetails from "./pages/student/quiz/QuizDetails";
@@ -196,6 +197,12 @@ const Pages = () => {
       <Route
   path="/student/quiz/waiting/:quizId"
   element={<QuizWaiting />}
+/>
+
+<Route  path="/leaderboard"
+element={
+<Leaderboard />
+}
 />
 
 <Route 
