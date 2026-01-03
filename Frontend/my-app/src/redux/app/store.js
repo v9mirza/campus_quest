@@ -6,6 +6,7 @@ import departmentReducer from "../features/departmentSlice";
 import studentReducer from "../features/studentSlice";
 import authReducer from "../features/authSlice";
 import facultyReducer from "../features/facultySlice";
+import quizAnswerReducer from "../features/quizAnswerSlice";
 
 import { quizApi } from "../services/quizApi";
 import { courseApi } from "../services/coursesApi";
@@ -63,6 +64,7 @@ export const store = configureStore({
     department: departmentReducer,
     student: studentReducer,
     faculty: facultyReducer,
+    quizAnswer: quizAnswerReducer,
 
     [quizApi.reducerPath]: quizApi.reducer,
     [courseApi.reducerPath]: courseApi.reducer,

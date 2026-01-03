@@ -32,7 +32,8 @@ import Otp from "./pages/student/auth/Otp";
 import QuizDetails from "./pages/student/quiz/QuizDetails";
 import QuizAttempt from "./pages/student/quiz/QuizAttempt";
 import FeedbackPage from "./pages/student/quiz/FeedbackPage";
-
+import QuizWaiting from "./pages/student/quiz/QuizWaiting";
+import QuizReview from "./pages/student/quiz/QuizReview";
 /* EXTRA */
 import CreateQuiz from "./pages/CreateQuiz";
 import QuestionsPage from "./pages/QuestionsPage";
@@ -191,6 +192,21 @@ const Pages = () => {
       />
 
       {/* ================= QUIZ ================= */}
+
+      <Route
+  path="/student/quiz/waiting/:quizId"
+  element={<QuizWaiting />}
+/>
+
+<Route 
+  path="/student/quiz/review"
+  element={
+    <ProtectedRoute allowedRoles={["student"]}>
+      <QuizReview />
+    </ProtectedRoute>
+  }
+/>
+
       <Route
         path="/student/quiz/:quizId"
         element={

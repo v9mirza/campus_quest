@@ -29,7 +29,7 @@ const PreviousQuizzes = () => {
       ) : (
         <div className="quiz-grid">
           {topFour.map((item) => (
-            <div key={item._id} className="quiz-tile">
+            <div key={item._id} className="quiz-tile" onClick={() => navigate("/student/quiz/review",{ state:{ quizId: item._id }})}>
               <div className="card-top">
                 <div className="quiz-icon-wrapper icon-previous">
                   <FaHistory />

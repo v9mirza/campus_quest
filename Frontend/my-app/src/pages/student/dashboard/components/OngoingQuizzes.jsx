@@ -14,8 +14,10 @@ const OngoingQuizzes = () => {
   if (isError) return <p style={{color: '#fff'}}>Error loading quizzes</p>;
 
   const filteredQuizzes = allQuizzes
-    .filter((quiz) => quiz.department === studentDetails.department)
+    .filter((quiz) => quiz.department === studentDetails.department && !quiz.isStarted &&  new Date(quiz.endTime).getTime() > Date.now() && !quiz.registeredStudents.includes(studentDetails._id))
     .slice(0, 4);
+
+
 
   return (
     <div className="quiz-section">

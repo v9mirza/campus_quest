@@ -1,46 +1,39 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+
+import { saveAnswer } from "../../../redux/features/quizAnswerSlice";
+import { useSubmitQuizMutation } from "../../../redux/services/quizApi";
+
+import QuizSecurity from "./QuizSecurity";
 import "./QuizAttempt.css";
-
-const QUESTIONS = [
-  {
-    id: 1,
-    question: "What does JVM stand for?",
-    options: [
-      "Java Virtual Machine",
-      "Java Visual Model",
-      "Joint Virtual Memory",
-      "None of the above"
-    ]
-  },
-  {
-    id: 2,
-    question: "Which company currently owns Java?",
-    options: ["Microsoft", "Oracle", "Google", "IBM"]
-  },
-  {
-    id: 3,
-    question: "Which keyword is used to inherit a class in Java?",
-    options: ["this", "super", "extends", "implements"]
-  }
-];
-
-const QUIZ_TIME = 5 * 60; // seconds
 
 const QuizAttempt = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
+
+  const { quizData } = location.state || {};
+  const questions = quizData?.questions || [];
+
+  const [submitQuiz] = useSubmitQuizMutation();
+
+  const { answers } = useSelector(
+    (state) => state.quizAnswer
+  );
 
   const [hasStarted, setHasStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(QUIZ_TIME);
+  const [timeLeft, setTimeLeft] = useState(
+    (quizData?.durationMinutes || 0) * 60
+  );
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   /* =========================
-     START QUIZ (fullscreen)
+     START QUIZ
   ========================= */
-  const startQuiz = async () => {
+  const handleStartQuiz = async () => {
     try {
       await document.documentElement.requestFullscreen();
       setHasStarted(true);
@@ -56,7 +49,7 @@ const QuizAttempt = () => {
     if (!hasStarted || isSubmitted) return;
 
     if (timeLeft === 0) {
-      handleSubmit();
+      handleSubmit("Time up");
       return;
     }
 
@@ -65,32 +58,69 @@ const QuizAttempt = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, hasStarted, isSubmitted]);
+  }, [hasStarted, isSubmitted, timeLeft]);
 
   /* =========================
-     HANDLERS
+     CURRENT QUESTION
   ========================= */
-  const currentQuestion = QUESTIONS[currentIndex];
-  const isAnswered = answers[currentIndex] !== undefined;
+  const currentQuestion = questions[currentIndex];
 
+  const isAnswered = answers.some(
+    (a) => a.questionId === currentQuestion?._id
+  );
+
+  /* =========================
+     ANSWER SELECT
+  ========================= */
   const handleSelect = (option) => {
-    setAnswers({ ...answers, [currentIndex]: option });
+    dispatch(
+      saveAnswer({
+        questionId: currentQuestion._id,
+        selectedAnswer: option,
+      })
+    );
   };
 
-  const handleSubmit = () => {
+  /* =========================
+     SUBMIT QUIZ
+  ========================= */
+  const handleSubmit = async (reason = "Completed") => {
     if (isSubmitted) return;
+
     setIsSubmitted(true);
 
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    }
+    const timeTaken =
+      quizData.durationMinutes * 60 - timeLeft;
 
-    navigate(`/student/quiz/${quizId}/feedback`, {
-      state: {
-        totalQuestions: QUESTIONS.length,
-        answers
+    try {
+      const res = await submitQuiz({
+        quizId,
+        data: {
+          answers,
+          timeTaken,
+        },
+      }).unwrap();
+
+      console.log("Quiz submitted:", res);
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
       }
-    });
+
+      navigate(`/student/quiz/${quizId}/feedback`, {
+        state: {
+          quizId,
+          answers,
+          timeTaken,
+          totalQuestions: questions.length,
+          reason,
+        },
+      });
+    } catch (error) {
+      console.error("Submit failed:", error);
+      alert("Quiz submission failed. Try again.");
+      setIsSubmitted(false);
+    }
   };
 
   const min = Math.floor(timeLeft / 60);
@@ -105,11 +135,11 @@ const QuizAttempt = () => {
         <div className="quiz-attempt-card">
           <h2>Ready to start the quiz?</h2>
           <p>
-            The quiz will run in fullscreen mode.<br />
-            Timer will start immediately.
+            Duration: {quizData?.durationMinutes} minutes <br />
+            Quiz will run in fullscreen mode
           </p>
 
-          <button className="primary" onClick={startQuiz}>
+          <button className="primary" onClick={handleStartQuiz}>
             Start Quiz
           </button>
         </div>
@@ -122,25 +152,39 @@ const QuizAttempt = () => {
   ========================= */
   return (
     <div className="quiz-attempt">
+      <QuizSecurity
+        hasStarted={hasStarted}
+        isSubmitted={isSubmitted}
+        onAutoSubmit={handleSubmit}
+      />
+
       <div className="quiz-attempt-card">
         <div className="quiz-header">
-          <h1>Quiz #{quizId}</h1>
+          <h1>{quizData?.title}</h1>
           <span className="quiz-timer">
             ⏱ {min}:{sec.toString().padStart(2, "0")}
           </span>
         </div>
 
         <p className="quiz-progress">
-          Question {currentIndex + 1} of {QUESTIONS.length}
+          Question {currentIndex + 1} of {questions.length}
         </p>
 
-        <h2>{currentQuestion.question}</h2>
+        <h2>{currentQuestion?.questionText}</h2>
 
         <ul className="quiz-options">
-          {currentQuestion.options.map((opt, i) => (
+          {currentQuestion?.options.map((opt, i) => (
             <li
               key={i}
-              className={answers[currentIndex] === opt ? "selected" : ""}
+              className={
+                answers.find(
+                  (a) =>
+                    a.questionId === currentQuestion._id &&
+                    a.selectedAnswer === opt
+                )
+                  ? "selected"
+                  : ""
+              }
               onClick={() => handleSelect(opt)}
             >
               {opt}
@@ -159,12 +203,12 @@ const QuizAttempt = () => {
           <button
             disabled={!isAnswered}
             onClick={() =>
-              currentIndex === QUESTIONS.length - 1
-                ? handleSubmit()
+              currentIndex === questions.length - 1
+                ? handleSubmit("Completed")
                 : setCurrentIndex((i) => i + 1)
             }
           >
-            {currentIndex === QUESTIONS.length - 1 ? "Submit" : "Next"}
+            {currentIndex === questions.length - 1 ? "Submit" : "Next"}
           </button>
         </div>
       </div>

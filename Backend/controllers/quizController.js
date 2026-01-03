@@ -12,7 +12,12 @@ const uploadCertificateToCloudinary = require('../utils/uploadCertificate');
 
 //  update
 // req.user.id t->req.user._id
-
+const shuffleArray = (arr) => {
+  return arr
+    .map((item) => ({ item, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map((obj) => obj.item);
+};
 
 const QuizCtrl = {
     createQuiz: async (req, res) => {
@@ -217,82 +222,110 @@ const QuizCtrl = {
             res.status(500).json({ message: 'Error attempting quiz', error: error.message });
         }
     },
-   submitQuiz: async (req, res) => {
-    try {
-        const { quizId } = req.params;
-        const studentId = req.user._id;
-        const { answers, timeTaken } = req.body;
+  submitQuiz: async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const studentId = req.user._id;
+    const { answers, timeTaken } = req.body;
 
-        const quiz = await Quiz.findById(quizId);
-        if (!quiz) {
-            return res.status(404).json({ message: 'Quiz not found' });
-        }
-
-        let correctCount = 0;
-        let wrongCount = 0;
-        let scoredMarks = 0;
-
-        quiz.questions.forEach((question) => {
-            const studentAnswer = answers.find(
-                ans => ans.questionId === question._id.toString()
-            );
-
-            if (studentAnswer) {
-                if (studentAnswer.selectedOption === question.correctAnswer) {
-                    correctCount++;
-                    scoredMarks += question.marks;
-                } else {
-                    wrongCount++;
-                    scoredMarks -= question.negativeMarks || 0;
-                }
-            }
-        });
-
-        await QuizAttempt.create({
-            quizId,
-            student: studentId,
-            answers,
-            correctCount,
-            wrongCount,
-            scoredMarks,
-            timeTaken
-        });
-
-        await Leaderboard.create({
-            quizId,
-            userId: studentId,
-            score: scoredMarks,
-            timeTaken
-        });
-
-        const updatedLeaderboard = await Leaderboard.find({ quizId })
-            .populate('userId', 'name')
-            .sort({
-                score: -1,    
-                timeTaken: 1   
-            });
-
-        io.to(quizId.toString()).emit('leaderboardUpdate', updatedLeaderboard);
-
-        return res.status(200).json({
-            message: 'Quiz submitted successfully',
-            score: scoredMarks
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            message: 'Error submitting quiz',
-            error: error.message
-        });
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
     }
+
+    const alreadyAttempted = await QuizAttempt.findOne({
+      quizId,
+      student: studentId,
+    });
+
+    if (alreadyAttempted) {
+      return res.status(400).json({
+        message: "Quiz already attempted",
+      });
+    }
+
+    const maxAllowedTime = quiz.durationMinutes * 60 + 5;
+    if (timeTaken > maxAllowedTime) {
+      return res.status(400).json({
+        message: "Invalid timeTaken",
+      });
+    }
+
+    let correctCount = 0;
+    let wrongCount = 0;
+    let scoredMarks = 0;
+
+    quiz.questions.forEach((question) => {
+      const studentAnswer = answers.find(
+        (ans) => ans.questionId === question._id.toString()
+      );
+
+      if (studentAnswer) {
+        if (
+          studentAnswer.selectedAnswer === question.correctAnswer
+        ) {
+          correctCount++;
+          scoredMarks += question.marks;
+        } else {
+          wrongCount++;
+          scoredMarks -= Math.abs(
+            question.negativeMarks || 0
+          );
+        }
+      }
+    });
+
+    await QuizAttempt.create({
+      quizId,
+      student: studentId,
+      answers,
+      correctCount,
+      wrongCount,
+      scoredMarks,
+      timeTaken,
+    });
+
+    await Leaderboard.create({
+      quizId,
+      userId: studentId,
+      score: scoredMarks,
+      timeTaken,
+    });
+
+    const updatedLeaderboard = await Leaderboard.find({ quizId })
+      .populate("userId", "name")
+      .sort({
+        score: -1,
+        timeTaken: 1,
+      });
+
+    io.to(quizId.toString()).emit(
+      "leaderboardUpdate",
+      updatedLeaderboard
+    );
+
+    return res.status(200).json({
+      message: "Quiz submitted successfully",
+      score: scoredMarks,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Error submitting quiz",
+      error: error.message,
+    });
+  }
 },
+
 
     getAttemptedQuizByStudent: async (req, res) => {
         try {
             const studentId = req.user._id;
+            console.log("Student ID:", studentId);
             const {quizId} = req.params;
+            console.log("Quiz ID:", quizId);
             const attemptedQuiz = await QuizAttempt.find({ student: studentId, quizId: quizId }).populate('quizId', 'title subject questions leaderboard');
+            console.log("Attempted Quiz:", attemptedQuiz);
             res.status(200).json(attemptedQuiz);
         } catch (error) {
             res.status(500).json({ message: 'Error fetching attempted quizzes', error: error.message });

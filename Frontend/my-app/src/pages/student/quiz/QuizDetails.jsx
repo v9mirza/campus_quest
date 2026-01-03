@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./QuizDetails.css";
 import { useRegisterStudentForQuizMutation } from "../../../redux/services/quizApi";
+import Socket from "../../../Socket";
+import { useGetQuizTimerQuery } from "../../../redux/services/quizApi";
+import QuizTimer from "./QuizTimer";
 
 const QuizDetails = () => {
   const { quizId } = useParams();
@@ -12,10 +15,21 @@ const QuizDetails = () => {
 
   const [errorMsg, setErrorMsg] = useState("");
   const [registerStudentForQuiz] = useRegisterStudentForQuizMutation();
+ const {
+  data: timerData,
+  isLoading,
+  isError,
+  refetch
+} = useGetQuizTimerQuery(quizId, {
+  skip: !quizData?.isStarted,
+});
 
-  const startQuiz = () => {
-    navigate(`/student/quiz/attempt/${quizId}`);
-  };
+console.log("Timer Data:", timerData);
+
+  if(isLoading) return <p style={{color: '#fff'}}>Loading timer...</p>;
+  if(isError) return <p style={{color: '#fff'}}>Error loading timer</p>;
+
+
 
   const handleRegister = async (id) => {
     try {
@@ -41,6 +55,24 @@ alert("Successfully registered for the quiz!");
       hour12: true,
     });
   };
+
+const handleJoin = () => {
+  if(!quizData?.isStarted){
+    alert("Quiz has not started yet!");
+    return;
+  }
+   Socket.emit(`join-timer-room`, { quizId: quizData?._id });
+   refetch();
+
+   navigate(`/student/quiz/waiting/${quizData?._id}`, {
+    state: {
+      quizData,
+       startTime: new Date(timerData.startTime).getTime(), 
+      duration: Number(timerData.duration) 
+    }
+  });
+}
+
 
   return (
     <div className="quiz-details">
@@ -84,7 +116,7 @@ alert("Successfully registered for the quiz!");
         {errorMsg && <p className="quiz-error">{errorMsg}</p>}
 
         {quizData?.isStarted || registered ? (
-          <button className="quiz-start-btn" onClick={startQuiz}>
+          <button className="quiz-start-btn" onClick={handleJoin}>
             Join
           </button>
         ) : (

@@ -59,9 +59,9 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    socket.on("joinRoom", (roomId) => {
-        socket.join(roomId);
-        console.log("Joined Room:", roomId);
+    socket.on("joinRoom", (quizId) => {
+        socket.join(quizId);
+        console.log("Joined Room:", quizId);
     });
   socket.on("join-timer-room", (quizId) => {
     socket.join(`timer_${quizId}`);
