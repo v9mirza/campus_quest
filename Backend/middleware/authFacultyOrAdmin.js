@@ -1,8 +1,6 @@
 
 
 
-
-
 const jwt = require("jsonwebtoken");
 const SuperAdmin = require("../models/superAdminModel");
 

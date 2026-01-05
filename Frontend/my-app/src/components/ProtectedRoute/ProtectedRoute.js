@@ -1,17 +1,10 @@
-
-
-
-
-
-
-
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 
 const roleToMeEndpoint = {
   superadmin: "http://localhost:5000/api/superadmin/me",
   faculty: "http://localhost:5000/api/faculty/me",
-  student: "http://localhost:5000/students/me"
+  student: "http://localhost:5000/api/student/me"
 };
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -21,11 +14,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        if (!allowedRoles || allowedRoles.length === 0) {
-          throw new Error("No roles defined");
-        }
-
-        // 🔁 Try each allowed role endpoint
         for (let role of allowedRoles) {
           const res = await fetch(roleToMeEndpoint[role], {
             credentials: "include"
@@ -38,7 +26,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
           }
         }
 
-        throw new Error("Unauthorized");
+        setAuthorized(false);
+        setLoading(false);
       } catch (err) {
         setAuthorized(false);
         setLoading(false);
@@ -48,15 +37,22 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     checkAuth();
   }, [allowedRoles]);
 
+  // -------------------------------
+  // TEMPORARY TESTING MODE
+  // -------------------------------
   if (loading) {
     return <p>Checking authentication...</p>;
   }
 
-  if (!authorized) {
-    return <Navigate to="/login" replace />;
-  }
-
   return children;
+
+  // -------------------------------
+  // AFTER TESTING (RESTORE THIS)
+  //
+  // if (loading) return <p>Checking authentication...</p>;
+  // if (!authorized) return <Navigate to="/student/login" replace />;
+  // return children;
+  // -------------------------------
 };
 
 export default ProtectedRoute;

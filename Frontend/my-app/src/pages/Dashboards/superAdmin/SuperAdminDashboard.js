@@ -4,87 +4,141 @@
 
 
 
-
-
-
-
-
-
-
 // import React, { useState, useEffect } from "react";
 // import "./superAdminDashboard.css";
 // import { useNavigate } from "react-router-dom";
-// import axios from "axios";
+
 // import {
 //   Users,
 //   BookOpen,
-//   UserPlus,
 //   GraduationCap,
 //   TrendingUp,
-//   Activity as ActivityIcon
+//   Award,
+//   MoreVertical,
+//   Clock as ClockIcon,
+//   Calendar as CalendarIcon,
+//   UserCheck
 // } from "lucide-react";
+
+// import { useGetAllCoursesQuery } from "../../../redux/services/coursesApi";
+// import { useGetAllStudentsQuery } from "../../../redux/services/studentApi";
+// import { useGetAllFacultyQuery } from "../../../redux/services/facultyApi";
+
 
 // const SuperAdminDashboard = () => {
 //   const navigate = useNavigate();
+//   const [activeQuizTab, setActiveQuizTab] = useState("upcoming");
 //   const [loading, setLoading] = useState(true);
 
+//   /* ================= STATS ================= */
 //   const [stats, setStats] = useState({
 //     totalFaculties: 0,
-//     totalStudents: 0, // now represents department + registered students
+//     totalStudents: 0,   // TEMP
 //     activeCourses: 0,
-//     totalQuizzes: 0
+//     totalQuizzes: 0     // TEMP
 //   });
 
-//   const [activities, setActivities] = useState([]);
+//   /* ================= QUIZZES ================= */
+//   const [quizzes, setQuizzes] = useState({
+//     upcoming: [],
+//     ongoing: [],
+//     completed: []
+//   });
 
+//   /* ================= ACTION CARDS ================= */
 //   const actionCards = [
-//     { id: 1, title: "Analytics", path: "/superadmin/analytics", },
-//     { id: 2, title: "Add Course", path: "/superadmin/course-management", icon: <BookOpen />, count: `${stats.activeCourses} Courses` },
-//     { id: 3, title: "View Faculty", path: "/superadmin/view-faculty", icon: <Users />, count: `${stats.totalFaculties} Faculty` },
-//     { id: 4, title: "View Students", path: "/students", icon: <GraduationCap />, count: stats.totalStudents ? `${stats.totalStudents} Students` : "Pending" }
+//     {
+//       id: 1,
+//       title: "Add Faculty",
+//       path: "/superadmin/add-faculty",
+//       icon: <UserPlus />,
+//       description: "Register new faculty members with detailed profiles",
+//       count: `${stats.totalFaculties} Active`
+//     },
+//     {
+//       id: 2,
+//       title: "Add Course",
+//       path: "/superadmin/course-management",
+//       icon: <BookOpen />,
+//       description: "Create and manage academic courses",
+//       count: `${stats.activeCourses} Courses`
+//     },
+//     {
+//       id: 3,
+//       title: "View Faculty",
+//       path: "/superadmin/view-faculty",
+//       icon: <Users />,
+//       description: "Browse complete faculty directory",
+//       count: `${stats.totalFaculties} Faculty`
+//     },
+//     {
+//       id: 4,
+//       title: "View Students",
+//       path: "/students",
+//       icon: <GraduationCap />,
+//       description: "Access student management portal",
+//       count: stats.totalStudents ? `${stats.totalStudents} Students` : "Backend Pending"
+//     }
 //   ];
 
+//   /* ================= FETCH DASHBOARD DATA ================= */
 //   useEffect(() => {
 //     const fetchDashboardData = async () => {
-//       setLoading(true);
 //       try {
-//         // FACULTIES
-//         const facultyRes = await axios.get("http://localhost:5000/api/faculty/all", { withCredentials: true });
+//         setLoading(true);
 
-//         // COURSES
-//         const courseRes = await axios.get("http://localhost:5000/api/course", { withCredentials: true });
+//         // ✅ FACULTY (ACTUAL)
+//         const facultyRes = await axios.get(
+//           "http://localhost:5000/api/faculty/all",
+//           { withCredentials: true }
+//         );
 
-//         // STUDENTS (department + registered)
+//         // ✅ COURSES (ACTUAL)
+//         const courseRes = await axios.get(
+//           "http://localhost:5000/api/course",
+//           { withCredentials: true }
+//         );
+
+//         // 🟡 STUDENTS (TEMP ROUTE)
 //         let studentCount = 0;
 //         try {
-//           const studentRes = await axios.get("http://localhost:5000/students/registered-students", { withCredentials: true });
-//           studentCount = studentRes.data.totalRegistered || 0;
-//         } catch (err) {
-//           console.error("Error fetching registered students:", err);
+//           const studentRes = await axios.get(
+//             "http://localhost:5000/api/students/count",
+//             { withCredentials: true }
+//           );
+//           studentCount = studentRes.data.total || 0;
+//         } catch {
+//           studentCount = 0;
 //         }
 
-//         // QUIZZES (just total count)
+//         // 🟡 QUIZZES (TEMP ROUTE)
 //         let quizCount = 0;
 //         try {
-//           const quizRes = await axios.get("http://localhost:5000/quiz/all-quizzes", { withCredentials: true });
-//           quizCount = quizRes.data.length || 0;
-//         } catch {}
+//           const quizRes = await axios.get(
+//             "http://localhost:5000/api/quizzes/count",
+//             { withCredentials: true }
+//           );
+//           quizCount = quizRes.data.total || 0;
+//         } catch {
+//           quizCount = 0;
+//         }
 
-//         // RECENT ACTIVITIES
-//         const activityRes = await axios.get("http://localhost:5000/api/activity/recent", { withCredentials: true });
-//         const activityData = activityRes.data || [];
-
-//         // Set stats
 //         setStats({
 //           totalFaculties: facultyRes.data.total || 0,
 //           activeCourses: courseRes.data.total || 0,
-//           totalStudents: studentCount, // department + registered
+//           totalStudents: studentCount,
 //           totalQuizzes: quizCount
 //         });
 
-//         setActivities(activityData);
+//         // 🟡 QUIZ LIST TEMP (EMPTY – BACKEND READY)
+//         setQuizzes({
+//           upcoming: [],
+//           ongoing: [],
+//           completed: []
+//         });
+
 //       } catch (err) {
-//         console.error("Dashboard fetch error:", err);
+//         console.error("Dashboard Error:", err);
 //       } finally {
 //         setLoading(false);
 //       }
@@ -93,15 +147,23 @@
 //     fetchDashboardData();
 //   }, []);
 
+//   const currentQuizzes = quizzes[activeQuizTab] || [];
+
 //   return (
 //     <div className="superadmin-container">
+
+//       {/* ===== HEADER ===== */}
 //       <header className="superadmin-header">
 //         <div className="header-content">
 //           <div className="header-left">
 //             <h1>Super Admin Dashboard</h1>
 //             <p>Welcome back! Manage your university efficiently</p>
 //           </div>
-//           <div className="profile-section" onClick={() => navigate("/superadmin/profile")}>
+
+//           <div
+//             className="profile-section"
+//             onClick={() => navigate("/superadmin/profile")}
+//           >
 //             <div className="profile-avatar">SA</div>
 //             <div className="profile-info">
 //               <h4>University Admin</h4>
@@ -111,27 +173,73 @@
 //         </div>
 //       </header>
 
+//       {/* ===== MAIN CONTENT ===== */}
 //       <div className="main-content">
-//         {/* Statistics */}
+
+//         {/* ===== STATISTICS ===== */}
 //         <div className="stats-overview">
-//           {["totalFaculties", "totalStudents", "activeCourses", "totalQuizzes"].map((key, idx) => (
-//             <div key={idx} className="stat-item">
-//               <h4>{key.replace(/([A-Z])/g, ' $1')}</h4>
-//               <div className="value">{stats[key]}</div>
-//               <div className="stat-trend trend-up"><TrendingUp size={16} /> Live</div>
-//             </div>
-//           ))}
+//           {loading ? (
+//             Array.from({ length: 4 }).map((_, i) => (
+//               <div key={i} className="stat-item loading-shimmer" />
+//             ))
+//           ) : (
+//             <>
+//               <div className="stat-item">
+//                 <h4>Total Faculty</h4>
+//                 <div className="value">{stats.totalFaculties}</div>
+//                 <div className="stat-trend trend-up">
+//                   <TrendingUp size={16} />
+//                   <span>Live from backend</span>
+//                 </div>
+//               </div>
+
+//               <div className="stat-item">
+//                 <h4>Total Students</h4>
+//                 <div className="value">
+//                   {stats.totalStudents || "—"}
+//                 </div>
+//                 <div className="stat-trend">
+//                   <span>Temp route</span>
+//                 </div>
+//               </div>
+
+//               <div className="stat-item">
+//                 <h4>Active Courses</h4>
+//                 <div className="value">{stats.activeCourses}</div>
+//                 <div className="stat-trend trend-up">
+//                   <TrendingUp size={16} />
+//                   <span>Live from backend</span>
+//                 </div>
+//               </div>
+
+//               <div className="stat-item">
+//                 <h4>Total Quizzes</h4>
+//                 <div className="value">
+//                   {stats.totalQuizzes || "—"}
+//                 </div>
+//                 <div className="stat-trend">
+//                   <span>Temp route</span>
+//                 </div>
+//               </div>
+//             </>
+//           )}
 //         </div>
 
-//         {/* Quick Actions */}
+//         {/* ===== QUICK ACTIONS ===== */}
 //         <section className="actions-section">
 //           <h2 className="section-title">Quick Actions</h2>
+
 //           <div className="action-cards">
 //             {actionCards.map(card => (
-//               <div key={card.id} className="action-card" onClick={() => navigate(card.path)}>
+//               <div
+//                 key={card.id}
+//                 className="action-card"
+//                 onClick={() => navigate(card.path)}
+//               >
 //                 <div className="action-card-inner">
 //                   <div className="action-icon">{card.icon}</div>
 //                   <h3>{card.title}</h3>
+//                   <p>{card.description}</p>
 //                   <span className="action-count">{card.count}</span>
 //                 </div>
 //               </div>
@@ -139,30 +247,42 @@
 //           </div>
 //         </section>
 
-//         {/* Recent Activity */}
-//         <section className="recent-activity-section">
-//           <div className="section-header">
-//             <h2><ActivityIcon size={24} /> Recent Activity</h2>
+//         {/* ===== QUIZ MANAGEMENT ===== */}
+//         <section className="quiz-management-section">
+//           <div className="quiz-header">
+//             <h2>
+//               <Target size={28} />
+//               Quiz Management
+//             </h2>
+//             <p>Monitor and manage all departmental quizzes</p>
 //           </div>
 
-//           {loading ? (
-//             <div>Loading activities...</div>
-//           ) : activities.length === 0 ? (
-//             <div className="empty-state">
-//               <h3>No recent activity found</h3>
-//             </div>
-//           ) : (
-//             <div className="activity-list">
-//               {activities.map((act) => (
-//                 <div key={act._id} className="activity-item">
-//                   <p className="activity-message">{act.message}</p>
-//                   <span className="activity-meta">
-//                     {act.performedBy} | {new Date(act.createdAt).toLocaleString()}
-//                   </span>
-//                 </div>
-//               ))}
-//             </div>
-//           )}
+//           <div className="quiz-tabs">
+//             {["upcoming", "ongoing", "completed"].map(tab => (
+//               <button
+//                 key={tab}
+//                 className={`quiz-tab ${activeQuizTab === tab ? "active" : ""}`}
+//                 onClick={() => setActiveQuizTab(tab)}
+//               >
+//                 {tab.toUpperCase()}
+//                 <span className="tab-badge">{quizzes[tab].length}</span>
+//               </button>
+//             ))}
+//           </div>
+
+//           <div className="quiz-content">
+//             {loading ? (
+//               <div className="empty-state">
+//                 <div className="loading-shimmer" style={{ height: 300 }} />
+//               </div>
+//             ) : currentQuizzes.length === 0 ? (
+//               <div className="empty-state">
+//                 <Target size={48} />
+//                 <h3>No quizzes found</h3>
+//                 <p>Backend integration pending</p>
+//               </div>
+//             ) : null}
+//           </div>
 //         </section>
 //       </div>
 //     </div>
@@ -170,6 +290,8 @@
 // };
 
 // export default SuperAdminDashboard;
+
+
 
 
 
@@ -478,7 +600,7 @@ const SuperAdminDashboard = () => {
                 <h2 className="display-5 fw-bold mb-1">{stats.totalStudents}</h2>
                 <p className="text-muted mb-0">Total Students</p>
                 <small className="text-success">
-                  <TrendingUp size={14} /> +8% this month
+                  <TrendingUp size={14} /> 
                 </small>
               </div>
             </div>

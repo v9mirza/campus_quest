@@ -1,56 +1,90 @@
-
-
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import "./styles/Login.css";
 
+import { useLoginFacultyMutation } from "../redux/services/facultyApi";
+import { useLoginSuperAdminMutation } from "../redux/services/superAdminApi";
+import { setCredentials } from "../redux/features/authSlice";
+
 const Login = () => {
-  const [userId, setUserId] = useState("");
+  const [facultyId, setFacultyId] = useState("");
   const [password, setPassword] = useState("");
+  const [userType, setUserType] = useState("");
   const [error, setError] = useState("");
+
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const [loginFaculty, { isLoading }] = useLoginFacultyMutation();
+  const [loginSuperAdmin, { isLoading: isSuperAdminLoading }] =
+    useLoginSuperAdminMutation();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
+    if (!userType) {
+      setError("Please select user type");
+      return;
+    }
+
     try {
-      const res = await fetch("http://localhost:5000/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        credentials: "include", // ⭐ VERY IMPORTANT
-        body: JSON.stringify({
-          userId,
-          password
-        })
-      });
+      let res;
 
-      const data = await res.json();
+      // ================= FACULTY LOGIN =================
+      if (userType === "faculty") {
+        res = await loginFaculty({
+          facultyId,
+          password,
+        }).unwrap();
+        
+        dispatch(
+          setCredentials({
+            user: res.user,
+            role: "faculty",
+          })
+        );
 
-      if (!res.ok) {
-        setError(data.message || "Invalid credentials");
+        navigate("/faculty/dashboard");
+      }
+
+      // ================= SUPER ADMIN LOGIN =================
+      else if (userType === "superAdmin") {
+        res = await loginSuperAdmin({
+          facultyId,
+          password,
+        }).unwrap();
+
+        dispatch(
+          setCredentials({
+            user: res.user,
+            role: "superadmin",
+          })
+        );
+
+        navigate("/superadmin/dashboard");
+      }
+    } catch (err) {
+      // ✅ HANDLE TEMP PASSWORD (403)
+      if (
+        userType === "faculty" &&
+        err?.status === 403 &&
+        err?.data?.forceChangePassword
+      ) {
+        navigate("/faculty-change-password", {
+          state: { facultyId },
+        });
         return;
       }
 
-      // 🔐 DO NOT store token anymore
-      // cookies are already set by backend
+      const message =
+        err?.data?.msg ||
+        err?.data?.message ||
+        err?.error ||
+        "Login failed";
 
-      // 🎯 Redirect based on role
-      if (data.role === "superadmin") {
-        navigate("/superadmin");
-      } else if (data.role === "faculty") {
-        navigate("/faculty");
-      }
-       else {
-        setError("Unknown role");
-      }
-
-    } catch (err) {
-      console.error("Login error:", err);
-      setError("Server error. Please try again.");
+      setError(message);
     }
   };
 
@@ -59,12 +93,21 @@ const Login = () => {
       <form className="auth-form" onSubmit={handleLogin}>
         <h3>Login</h3>
 
-        {error && <p className="error-text">{error}</p>}
+        <select
+          value={userType}
+          className="auth-select"
+          onChange={(e) => setUserType(e.target.value)}
+          required
+        >
+          <option value="">Select User Type</option>
+          <option value="faculty">Faculty</option>
+          <option value="superAdmin">Super Admin</option>
+        </select>
 
         <input
-          placeholder="User ID / Faculty ID / Roll No"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
+          placeholder="User ID / Faculty ID"
+          value={facultyId}
+          onChange={(e) => setFacultyId(e.target.value)}
           required
         />
 
@@ -76,7 +119,11 @@ const Login = () => {
           required
         />
 
-        <button type="submit">Login</button>
+        <button type="submit" disabled={isLoading || isSuperAdminLoading}>
+          {isLoading || isSuperAdminLoading ? "Logging in..." : "Login"}
+        </button>
+
+        {error && <p className="error-text">{error}</p>}
       </form>
     </div>
   );

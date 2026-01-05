@@ -5,18 +5,22 @@ const studentController = require("../controllers/studentController");
 const feedbackController = require("../controllers/feedbackController");
 
 const authFacultyOrSuperAdmin = require("../middleware/authFacultyOrAdmin");
-const auth = require("../middleware/auth");
+
+const authUser = require("../middleware/authUser");
 
 /* ================= AUTH ================= */
 
 // REGISTER
 router.post("/register", studentController.registerStudent);
-router.get("/me", auth, studentController.getStudentProfile);
+
+// GET STUDENT PROFILE
+router.get("/me", authUser, studentController.getStudentProfile);
 
 // VERIFY EMAIL (OTP)
 router.post("/verify-email", studentController.verifyEmail);
 
-// LOGIN
+// LOGIN - DUPLICATE ROUTES (COMMENTED ONE)
+// router.post("/login", studentController.loginStudent);
 router.post("/login", studentController.loginStudent);
 
 // REFRESH ACCESS TOKEN
@@ -32,15 +36,20 @@ router.post("/reset-password", studentController.resetPassword);
 
 // GET ALL STUDENTS
 router.get("/", authFacultyOrSuperAdmin, studentController.getAllStudents);
-// GET /students/registered
+
+// GET REGISTERED STUDENTS
 router.get("/registered-students", authFacultyOrSuperAdmin, studentController.getRegisteredStudents);
-router.get("/students-quizzes/:id", authFacultyOrSuperAdmin,studentController.getStudentQuizzes);
+
+// GET STUDENT QUIZZES
+router.get("/students-quizzes/:id", authFacultyOrSuperAdmin, studentController.getStudentQuizzes);
+
 // GET ONE STUDENT
 router.get("/:id", authFacultyOrSuperAdmin, studentController.getStudent);
 
 // DELETE STUDENT
 router.delete("/:id", authFacultyOrSuperAdmin, studentController.deleteStudent);
 
+// Test route (commented in both files)
 // router.get("/:id", (req, res) => {
 //   console.log("Student ID requested:", req.params.id);
 //   res.json({ ok: true });
@@ -48,8 +57,12 @@ router.delete("/:id", authFacultyOrSuperAdmin, studentController.deleteStudent);
 
 /* ================= FEEDBACK ================= */
 
-// SUBMIT FEEDBACK
-router.post("/feedback", auth, feedbackController.submitFeedback);
+// SUBMIT FEEDBACK - DUPLICATE ROUTES WITH DIFFERENT MIDDLEWARE
+// router.post("/feedback", auth, feedbackController.submitFeedback);
+router.post("/feedback", authUser, feedbackController.submitFeedback);
+
+// GET QUIZ RATING
+router.get("/rating/:quizId", feedbackController.getQuizRating);
 
 // GET ALL FEEDBACKS
 router.get("/all-feedbacks", feedbackController.getAllFeedbacks);

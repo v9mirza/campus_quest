@@ -3,17 +3,22 @@ const router = express.Router();
 const authSuperAdmin = require("../middleware/authSuperAdmin");
 
 const {
+  superAdminLogin,
   registerSuperAdmin,
   forgotPassword,
   resetPassword,
   changePassword,
   getSuperAdminProfile,
+  refreshToken,
   getDepartmentAttemptedQuizzes,
   getStudentAttemptedQuizzes,
-  getQuizAttemptsAnalytics
+  getQuizAttemptsAnalytics,
+
 } = require("../controllers/superAdminController");
 
 
+
+router.post("/login",superAdminLogin);
 
 // ✔ Register Super Admin
 router.post("/register", registerSuperAdmin);
@@ -26,6 +31,9 @@ router.post("/forgot-password", forgotPassword);
 
 // ✔ Reset Password
 router.post("/reset-password", resetPassword);
+
+//refresh Token
+router.get("/refresh-token",refreshToken);
 
 // ✔ SuperAdmin Profile
 router.get("/me", authSuperAdmin, getSuperAdminProfile);

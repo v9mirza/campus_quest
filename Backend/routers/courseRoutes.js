@@ -3,26 +3,39 @@ const router = express.Router();
 const authSuperAdmin = require("../middleware/authSuperAdmin");
 
 const {
-  createOrMergeCourse,
+ createOrMergeCourse ,
   getAllCourses,
   getCourseById,
   updateCourse,
-  deleteCourse
+  deleteCourse,
+  getGroups,
+  createCoursesBulk,
+  // getAllCoursesByDept,
+  // getAllCoursesFilter
 } = require("../controllers/courseController");
 
-// Create or merge course
-router.post("/add",authSuperAdmin, createOrMergeCourse);
+//Create or merge course
+router.post("/add",authSuperAdmin,createOrMergeCourse );
 
-// Get all courses
+// router.get("/All-courses",getAllCoursesFilter)
+
+//Get all courses
 router.get("/",authSuperAdmin,getAllCourses);
 
-// Get course by id
+// router.get("/dept",getAllCoursesByDept);
+
+router.get('/group',getGroups);
+
+//Get course by id
 router.get("/:id",authSuperAdmin, getCourseById);
 
-// Update course
+//Update course
 router.put("/:id",authSuperAdmin,updateCourse);
 
-// Delete course
+//Delete course
 router.delete("/:id",authSuperAdmin,deleteCourse);
+
+router.post("/bulk-create", createCoursesBulk);
+
 
 module.exports = router;

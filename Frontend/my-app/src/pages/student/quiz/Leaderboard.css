@@ -1,0 +1,133 @@
+.lb-page {
+  min-height: 100vh;
+  padding: 40px;
+  color: #e5e7eb;
+   background: linear-gradient(
+    180deg,
+    #0b1220 0%,
+    #121a2f 45%,
+    #1a2440 100%
+  );
+}
+
+.lb-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+/* ================= TOP 3 ================= */
+
+.lb-top-three {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  margin-bottom: 40px;
+}
+
+.lb-winner-card {
+  width: 230px;
+  padding: 24px;
+  border-radius: 22px;
+  backdrop-filter: blur(18px);
+  background: rgba(255, 255, 255, 0.06);
+  text-align: center;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.lb-winner-card:hover {
+  transform: translateY(-8px) scale(1.05);
+}
+
+.lb-rank-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0ea5e9;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+}
+
+.lb-rank-1 {
+  border: 2px solid #facc15;
+  box-shadow: 0 0 30px rgba(250, 204, 21, 0.7);
+}
+
+.lb-rank-2 {
+  border: 2px solid #cbd5e1;
+}
+
+.lb-rank-3 {
+  border: 2px solid #fb923c;
+}
+
+.lb-winner-card h3 {
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.lb-score-text {
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.lb-time-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: #93c5fd;
+}
+
+/* ================= FULL LIST ================= */
+
+.lb-list {
+  max-width: 760px;
+  margin: auto;
+  border-radius: 20px;
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 50px 1fr 100px 80px;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 14px;
+  transition: all 0.25s ease;
+}
+
+.lb-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.02);
+}
+
+.lb-rank {
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+.lb-name {
+  font-weight: 500;
+}
+
+.lb-time {
+  font-size: 14px;
+  color: #93c5fd;
+}
+
+.lb-score {
+  font-weight: 700;
+  color: #22c55e;
+}

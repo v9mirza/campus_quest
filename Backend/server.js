@@ -12,8 +12,8 @@ const facultyRoutes = require('./routers/facultyRoutes');
 const superAdminRoutes = require('./routers/superAdminRoutes');
 const courseRoutes = require('./routers/courseRoutes');
 const leaderboardRoutes = require('./routers/leaderboardRoutes');
-const authRoutes = require('./routers/authRoutes');
-
+const departmentRoutes = require('./routers/departmentRoutes');
+const chatRoutes = require('./routers/chatRoutes');
 
 //Importing HTTP and creating server 
 const http = require("http");
@@ -46,11 +46,12 @@ app.use("/api", require("./routers/FacultyAnalyticsRoutes"));
 //Routes 
 app.use('/students', studentRoutes);
 app.use('/quiz', quizRoutes);
-app.use('/api/superadmin', superAdminRoutes);
+app.use('/api/superAdmin', superAdminRoutes);
 app.use('/api/course', courseRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
-app.use("/api", authRoutes);
+app.use('/api/department', departmentRoutes);
+app.use('/api/chat',chatRoutes);
 
 app.use("/api/activity", require("./routers/activityRoutes"));
 
@@ -69,9 +70,9 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    socket.on("joinRoom", (roomId) => {
-        socket.join(roomId);
-        console.log("Joined Room:", roomId);
+    socket.on("joinRoom", (quizId) => {
+        socket.join(quizId);
+        console.log("Joined Room:", quizId);
     });
   socket.on("join-timer-room", (quizId) => {
     socket.join(`timer_${quizId}`);

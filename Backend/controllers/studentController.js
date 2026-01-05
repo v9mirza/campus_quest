@@ -6,23 +6,87 @@ const Quiz = require("../models/quizModel");
 /* ================= REGISTER STUDENT ================= */
 exports.registerStudent = async (req, res) => {
   try {
+    const { email } = req.body;
+    console.log(req.body)
+
+    if (!email.includes("@student.iul.ac.in")) {
+      return res.status(400).json({ message: "Enter University Email" });
+    }
+
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
     const student = await Student.create({
       ...req.body,
       emailVerificationCode: otp,
-      emailVerificationExpires: Date.now() + 10 * 60 * 1000 // 10 min
+      emailVerificationExpires: Date.now() + 10 * 60 * 1000,
+    });
+
+    const accessToken = jwt.sign(
+      { id: student._id },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: student._id },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    student.refreshToken = refreshToken;
+    await student.save();
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     await sendEmail(
       student.email,
       "Verify your Campus Quest email",
-      `Your verification code is ${otp}`
+      `
+      <h2>Email Verification</h2>
+      <p>Your OTP is:</p>
+      <h1>${otp}</h1>
+      <p>Valid for 10 minutes.</p>
+      `
     );
 
     res.status(201).json({
-      message: "Registration successful. Verification code sent to email."
+      message: "Registration successful. Verification code sent to email.",
     });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+/* ================= RESEND OTP ================= */
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const student = await Student.findOne({ email });
+    if (!student) return res.status(404).json({ msg: "Student not found" });
+
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    student.emailVerificationCode = otp;
+    student.emailVerificationExpires = Date.now() + 10 * 60 * 1000;
+    await student.save();
+
+    await sendEmail(
+      email,
+      "Verify your Campus Quest email",
+      `<h2>Your OTP: ${otp}</h2>`
+    );
+
+    res.json({ msg: "Verification code sent" });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -31,16 +95,16 @@ exports.registerStudent = async (req, res) => {
 /* ================= VERIFY EMAIL ================= */
 exports.verifyEmail = async (req, res) => {
   try {
-    const { email, code } = req.body;
-
+    const { email, otp } = req.body;
     const student = await Student.findOne({ email });
+
     if (!student) return res.status(404).json({ msg: "Student not found" });
 
     if (
-      student.emailVerificationCode !== code ||
+      student.emailVerificationCode !== otp ||
       student.emailVerificationExpires < Date.now()
     ) {
-      return res.status(400).json({ msg: "Invalid or expired code" });
+      return res.status(400).json({ msg: "Invalid or expired OTP" });
     }
 
     student.emailVerified = true;
@@ -60,28 +124,16 @@ exports.verifyEmail = async (req, res) => {
 
 exports.loginStudent = async (req, res) => {
   try {
-    const { identifier, password } = req.body; // studentId or email
-
-    // Find student by studentId OR email
-    const student = await Student.findOne({
-      $or: [{ studentId: identifier }, { email: identifier.toLowerCase() }]
-    });
-
-    if (!student) {
-      return res.status(404).json({ message: "Student not found" });
-    }
+    const student = await Student.findOne({ email: req.body.email });
+    if (!student) return res.status(404).json({ msg: "Student not found" });
 
     if (!student.emailVerified) {
-      return res.status(403).json({ message: "Please verify your email first" });
+      return res.status(403).json({ msg: "Please verify your email first" });
     }
 
-    // Compare password
-    const isMatch = await bcrypt.compare(password, student.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Wrong password" });
-    }
+    const match = await bcrypt.compare(req.body.password, student.password);
+    if (!match) return res.status(401).json({ msg: "Wrong password" });
 
-    // Generate tokens
     const accessToken = jwt.sign(
       { id: student._id, role: "student" },
       process.env.ACCESS_TOKEN_SECRET,
@@ -98,31 +150,7 @@ exports.loginStudent = async (req, res) => {
     student.refreshToken = refreshToken;
     await student.save();
 
-    // Set cookies
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: false, // change to true if using HTTPS
-      sameSite: "lax",
-      maxAge: 15 * 60 * 1000
-    });
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false, // change to true if using HTTPS
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-
-    return res.status(200).json({
-      message: "Student login successful",
-      role: "student",
-      student: {
-        id: student._id,
-        name: student.name,
-        studentId: student.studentId
-      }
-    });
-
+    res.json({ accessToken, refreshToken });
   } catch (err) {
     console.error("Student Login Error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -133,9 +161,9 @@ exports.loginStudent = async (req, res) => {
 /* ================= REFRESH TOKEN ================= */
 exports.refreshToken = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken;
     if (!refreshToken)
-      return res.status(401).json({ msg: "Refresh token required" });
+      return res.status(401).json({ msg: "Refresh token missing" });
 
     const decoded = jwt.verify(
       refreshToken,
@@ -153,10 +181,31 @@ exports.refreshToken = async (req, res) => {
       { expiresIn: "15m" }
     );
 
-    res.json({ accessToken: newAccessToken });
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.json({ msg: "Access token refreshed" });
   } catch (err) {
     res.status(403).json({ msg: "Invalid refresh token" });
   }
+};
+
+/* ================= LOGOUT ================= */
+exports.logoutStudent = async (req, res) => {
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  res.json({ msg: "Logged out successfully" });
+};
+
+/* ================= GET PROFILE ================= */
+exports.getMe = async (req, res) => {
+  const student = await Student.findById(req.user.id).select(
+    "-password -refreshToken"
+  );
+  res.json(student);
 };
 
 /* ================= GET ALL STUDENTS ================= */
@@ -264,15 +313,6 @@ exports.getStudentQuizzes = async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
-
 /* ================= GET ONE STUDENT ================= */
 exports.getStudent = async (req, res) => {
   const student = await Student.findById(req.params.id).select(
@@ -283,19 +323,14 @@ exports.getStudent = async (req, res) => {
 
 /* ================= DELETE STUDENT ================= */
 exports.deleteStudent = async (req, res) => {
-  try {
-    await Student.findByIdAndDelete(req.params.id);
-    res.json({ msg: "Student deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ msg: err.message });
-  }
+  await Student.findByIdAndDelete(req.params.id);
+  res.json({ msg: "Student deleted successfully" });
 };
 
 /* ================= FORGOT PASSWORD ================= */
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-
     const student = await Student.findOne({ email });
     if (!student) return res.status(404).json({ msg: "Student not found" });
 
@@ -309,13 +344,12 @@ exports.forgotPassword = async (req, res) => {
     student.resetTokenExpiry = Date.now() + 15 * 60 * 1000;
     await student.save();
 
-    const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+    const resetLink = `http://localhost:3000/student/reset-password/${resetToken}`;
 
     await sendEmail(
       email,
       "Reset Your Campus Quest Password",
-      `<p>Hello ${student.name},</p>
-       <p><a href="${resetLink}">Reset Password</a></p>`
+      `<a href="${resetLink}">Reset Password</a>`
     );
 
     res.json({ msg: "Password reset email sent" });
@@ -340,7 +374,8 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ msg: "Invalid or expired token" });
     }
 
-    student.password = newPassword;
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    student.password = hashedPassword;
     student.resetToken = null;
     student.resetTokenExpiry = null;
 

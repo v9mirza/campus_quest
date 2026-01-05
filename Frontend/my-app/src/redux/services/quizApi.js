@@ -16,7 +16,7 @@ export const quizApi = createApi({
       query: (formData) => ({
         url: "/create-quiz",
         method: "POST",
-        body: formData, // FormData (multer upload.any)
+        body: formData, 
       }),
       invalidatesTags: ["Quiz"],
     }),
@@ -52,12 +52,29 @@ export const quizApi = createApi({
       invalidatesTags: ["Quiz"],
     }),
 
+    attemptedQuizByStudent: builder.query({
+      query: (quizId) => `/${quizId}/student`,
+      providesTags: (result, error, quizId) => [
+        { type: "Quiz", id: quizId },
+      ],
+    }),
+
+    getAllAttemptedQuizzes: builder.query({
+      query: () => '/attempted-quizzes',
+      providesTags: ["Quiz"],
+    }),
+
     registerStudentForQuiz: builder.mutation({
       query: ({ quizId, data }) => ({
         url: `/${quizId}/register-student`,
         method: "POST",
         body: data,
       }),
+    }),
+ 
+    getRegisteredQuizzesForStudent: builder.query({
+      query: () => `/my-registered-quizzes`,
+      providesTags: ["Quiz"],
     }),
 
     submitQuiz: builder.mutation({
@@ -108,16 +125,24 @@ export const quizApi = createApi({
 
 export const {
   useCreateQuizMutation,
-  useGetAllQuizzesQuery,    
-    useGetQuizByIdQuery,
-    useUpdateQuizByIdMutation,
-    useDeleteQuizByIdMutation,
-    useRegisterStudentForQuizMutation,
-    useSubmitQuizMutation,
-    useStartQuizAttemptQuery,
-    useStartTimerQuery,
-    useStartQuizTimerMutation,
-    useGetQuizTimerQuery,
-    useGenerateCertificateMutation,
-    useGetQuizzesByDepartmentQuery,
+  useGetAllQuizzesQuery,
+  useGetQuizByIdQuery,
+  useLazyGetQuizByIdQuery,
+  useUpdateQuizByIdMutation,
+  useDeleteQuizByIdMutation,
+  useAttemptedQuizByStudentQuery,
+  useGetAllAttemptedQuizzesQuery,
+  useRegisterStudentForQuizMutation,
+  useGetRegisteredQuizzesForStudentQuery,
+  useSubmitQuizMutation,
+
+  useStartQuizAttemptMutation,
+  useStartQuizTimerMutation,
+
+  useGetQuizTimerQuery,
+  useGetQuizzesByDepartmentQuery,
+
+  useGenerateCertificateMutation,
 } = quizApi;
+
+export default quizApi;

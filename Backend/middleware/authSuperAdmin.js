@@ -4,9 +4,7 @@ const SuperAdmin = require("../models/superAdminModel");
 
 const authSuperAdmin = async (req, res, next) => {
   try {
-    const token =
-      req.cookies?.accessToken ||       // browser
-      req.headers.accesstoken;           // thunder / postman
+    const token = req.cookies?.accessToken;
 
     if (!token) {
       return res.status(401).json({
