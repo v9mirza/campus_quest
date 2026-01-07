@@ -15,55 +15,30 @@ const upload = multer({
   },
 });
 
-router.post("/generate-certificate", authUser, quizController.generateCertificate);
+router.post('/generate-certificate', quizController.generateCertificate);
 
-router.post("/create-quiz", authFaculty, upload.any(), quizController.createQuiz);
+router.post('/create-quiz',authFaculty,upload.any(), quizController.createQuiz);
 
-router.get("/all-quizzes", quizController.getAllQuizzes);
+router.get('/all-quizzes',quizController.getAllQuizzes);
 
-router.get("/attempted-quizzes", authUser, quizController.getAllAttemptedQuizzes);
+router.get('/:quizId', quizController.getQuizById);
 
-router.get("/my-quizzes", authFaculty, quizController.getFacultyQuizzes);
+router.put('/:quizId',authFaculty,quizController.updateQuizById);
 
-router.get("/my-registered-quizzes", authUser, quizController.getStudentsRegisteredQuizzes);
+router.delete('/:quizId',authFaculty,quizController.deleteQuizById);
 
-router.get(
-  "/department/:departmentName",
-  authSuperAdmin,
-  quizController.getQuizzesByDepartment
-);
+router.post('/:quizId/register-student',authUser, quizController.registerStudentForQuiz);
 
-router.get(
-  "/:quizId/registeredStudent",
-  quizController.QuizRegisteredStudents
-);
+router.get('/department/:departmentName',authSuperAdmin,quizController.getQuizzesByDepartment);
 
-router.get(
-  "/:quizId/student",
-  authUser,
-  quizController.getAttemptedQuizByStudent
-);
+router.post('/:quizId/submit',authUser,quizController.submitQuiz);
 
-router.post("/:quizId/start", authUser, quizController.QuizAttempt);
+router.get('/:quizId/start',authUser, quizController.QuizAttempt);
 
-router.get("/:quizId/start-timer", authFaculty, quizController.startTimer);
+router.get("/:quizId/start-timer",authFaculty,quizController.startTimer);
 
-router.post("/:quizId/start-timer", authFaculty, quizController.startQuizTimer);
+router.post("/:quizId/start-timer", quizController.startQuizTimer);
 
 router.get("/:quizId/timer", quizController.getQuizTimer);
-
-router.post("/:quizId/submit", authUser, quizController.submitQuiz);
-
-router.post(
-  "/:quizId/register-student",
-  authUser,
-  quizController.registerStudentForQuiz
-);
-
-router.put("/:quizId", authFaculty, quizController.updateQuizById);
-
-router.delete("/:quizId", authFaculty, quizController.deleteQuizById);
-
-router.get("/:quizId", quizController.getQuizById);
 
 module.exports = router;

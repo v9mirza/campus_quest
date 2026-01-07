@@ -1,6 +1,8 @@
+
+
+
 const Course = require("../models/courseModel");
-
-
+const Activity = require("../models/activityModel");
 
 /* ================================
    Normalize Input Helper
@@ -19,136 +21,83 @@ const normalizeInput = (data) => {
   };
 }
 
-/***********************************
- * CREATE or MERGE Course (Departmental/Global)
- ***********************************/
+
+//  CREATE or MERGE Course (Departmental/Global)
+
 exports.createOrMergeCourse = async (req, res) => {
   try {
-    const { courseType, department, courseName, year, groups, createdBy } =
+    const { department, courseName, year, groups } =
       normalizeInput(req.body);
 
-    // 1) Base validation
-    if (!courseType || !courseName || !year || !createdBy) {
+    // 🔐 Always from auth middleware
+    const createdBy = req.user.id;
+
+    /* -------- Validation -------- */
+    if (!department || !courseName || !year) {
       return res.status(400).json({
-        message:
-          "courseType, courseName, year, and createdBy are required fields."
+        success: false,
+        message: "Department, Course Name and Year are required.",
       });
     }
 
-    // 2) Check valid courseType
-    if (!["departmental", "global"].includes(courseType)) {
-      return res
-        .status(400)
-        .json({ message: "courseType must be 'departmental' or 'global'." });
-    }
+    /* -------- Check existing course -------- */
+    const existingCourse = await Course.findOne({
+      department,
+      normalizedCourseName: courseName.toLowerCase(),
+      year,
+    });
 
-    // 3) Mode-based validations
-    if (courseType === "departmental") {
-      if (!department)
-        return res
-          .status(400)
-          .json({ message: "department is required for departmental courses." });
+    /* -------- Merge groups if course exists -------- */
+    if (existingCourse) {
+      if (groups.length) {
+        existingCourse.groups = [
+          ...new Set([...existingCourse.groups, ...groups]),
+        ];
+        await existingCourse.save();
+      
 
-      if (!groups.length)
-        return res.status(400).json({
-          message: "Groups are required for departmental courses."
+await Activity.create({
+          action: "COURSE_UPDATED",
+          message: `Groups of course "${courseName}" updated in ${department} department`,
+          performedBy: req.user?.name || "Super Admin"
         });
     }
 
-    // Filter based on type
-    const filter =
-      courseType === "departmental"
-        ? { courseType, department, courseName, year }
-        : { courseType, courseName, year };
 
-    // Update for departmental
-    const update =
-      courseType === "departmental"
-        ? { $addToSet: { groups: { $each: groups } } }
-        : {}; // global has no groups to merge
 
-    const updated = await Course.findOneAndUpdate(filter, update, {
-      new: true
-    });
-
-    if (updated) {
       return res.status(200).json({
-        message: "Existing course updated (merged groups if departmental).",
-        course: updated
+        success: true,
+        message: "Course already exists. Groups merged successfully.",
+        course: existingCourse,
       });
     }
 
-    // Create new course
-    const createData =
-      courseType === "departmental"
-        ? { courseType, department, courseName, year, groups, createdBy }
-        : { courseType, courseName, year, createdBy };
-
-    const created = await Course.create(createData);
-
-    return res
-      .status(201)
-      .json({ message: "New course created successfully.", course: created });
-  } catch (err) {
-    // Handle unique index race-case
-    if (err.code === 11000) {
-      try {
-        const { courseType, department, courseName, year, groups } =
-          normalizeInput(req.body);
-
-        const filter =
-          courseType === "departmental"
-            ? { courseType, department, courseName, year }
-            : { courseType, courseName, year };
-
-        const merge =
-          courseType === "departmental"
-            ? { $addToSet: { groups: { $each: groups } } }
-            : {};
-
-        const merged = await Course.findOneAndUpdate(filter, merge, {
-          new: true
-        });
-
-        return res.status(200).json({
-          message: "Race condition: existing course updated.",
-          course: merged
-        });
-      } catch (e) {
-        return res.status(500).json({ error: e.message });
-      }
-    }
-
-    return res.status(500).json({ error: err.message });
-  }
-};
-
-/***********************************
- * GET ALL COURSES (Filtered)
- ***********************************/
-exports.getAllCoursesFilter = async (req, res) => {
-  try {
-    const filter = {};
-
-    if (req.query.courseType)
-      filter.courseType = String(req.query.courseType).trim();
-
-    if (req.query.department)
-      filter.department = String(req.query.department).trim();
-
-    if (req.query.courseName)
-      filter.courseName = String(req.query.courseName).trim();
-
-    if (req.query.year) filter.year = Number(req.query.year);
-
-    const courses = await Course.find(filter).sort({
-      courseType: 1,
-      department: 1,
-      courseName: 1,
-      year: 1
+    /* -------- Create new course -------- */
+    const newCourse = await Course.create({
+      department,
+      courseName,
+      normalizedCourseName: courseName.toLowerCase(),
+      year,
+      groups,
+      createdBy,
     });
 
-    return res.status(200).json({ total: courses.length, courses });
+     await Activity.create({
+      action: "COURSE_ADDED",
+      message: `Course "${courseName}" created in ${department} department`,
+      performedBy: req.user?.name || "Super Admin"
+    });
+
+    const populatedCourse = await Course.findById(newCourse._id).populate(
+      "createdBy",
+      "name email"
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Course created successfully.",
+      course: populatedCourse,
+    });
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -156,6 +105,8 @@ exports.getAllCoursesFilter = async (req, res) => {
     });
   }
 };
+
+
 
 /* ==========================
    UPDATE COURSE
@@ -181,6 +132,14 @@ exports.updateCourse = async (req, res) => {
       });
     }
 
+
+ await Activity.create({
+      action: "COURSE_UPDATED",
+      message: `Course "${updatedCourse.courseName}" updated in ${updatedCourse.department} department`,
+      performedBy: req.user?.name || "Super Admin"
+    });
+
+
     return res.status(200).json({
       success: true,
       message: "Course updated successfully.",
@@ -197,7 +156,30 @@ exports.updateCourse = async (req, res) => {
 /* ==========================
    GET ALL COURSES
 ========================== */
-exports.getAllCoursesByDept = async (req, res) => {
+// exports.getAllCourses = async (req, res) => {
+//   try {
+//     console.log("👤 Logged in user:", req.user);
+//     console.log("🏢 User department:", req.user.department);
+
+//     const courses = await Course.find({
+//       department: req.user.department,
+//     });
+
+//     console.log("📚 Courses found:", courses.length);
+
+//     res.status(200).json({
+//       success: true,
+//       total: courses.length,
+//       courses,
+//     });
+//   } catch (err) {
+//     res.status(500).json({ success: false, error: err.message });
+//   }
+// };
+
+
+
+exports.getAllCourses = async (req, res) => {
   try {
     const courses = await Course.find({
       department: req.user.department, // 🔥 MAIN FILTER
@@ -218,22 +200,6 @@ exports.getAllCoursesByDept = async (req, res) => {
     return res.status(500).json({
       success: false,
       error: err.message,
-    });
-  }
-};
-
-exports.getAllCourses=async(req,res)=>{
-  try {
-    const courses=await Course.find().sort({createdAt:-1});
-    return res.status(200).json({
-      success:true,
-      total:courses.length,
-      courses
-    });
-  } catch (err) {
-    return res.status(500).json({
-      success:false,
-      error:err.message
     });
   }
 };
@@ -280,6 +246,14 @@ exports.deleteCourse = async (req, res) => {
         message: "Course not found.",
       });
     }
+
+
+  await Activity.create({
+      action: "COURSE_DELETED",
+      message: `Course "${deletedCourse.courseName}" deleted from ${deletedCourse.department} department`,
+      performedBy: req.user?.name || "Super Admin"
+    });
+
 
     return res.status(200).json({
       success: true,

@@ -10,19 +10,19 @@ const {
   deleteCourse,
   getGroups,
   createCoursesBulk,
-  getAllCoursesByDept,
-  getAllCoursesFilter
+  // getAllCoursesByDept,
+  // getAllCoursesFilter
 } = require("../controllers/courseController");
 
 //Create or merge course
 router.post("/add",authSuperAdmin,createOrMergeCourse );
 
-router.get("/All-courses",getAllCoursesFilter)
+// router.get("/All-courses",getAllCoursesFilter)
 
 //Get all courses
-router.get("/", getAllCourses);
+router.get("/",authSuperAdmin,getAllCourses);
 
-router.get("/dept",getAllCoursesByDept);
+// router.get("/dept",getAllCoursesByDept);
 
 router.get('/group',getGroups);
 

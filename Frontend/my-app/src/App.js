@@ -1,16 +1,14 @@
-import "bootstrap/dist/css/bootstrap.min.css";
-import Header from "./components/Header/Header";
-import Navbar from "./components/Header/Navbar";
-import Pages from "./Pages";
+import React from 'react'
+import Pages from './Pages.jsx';
 
-function App() {
+const App = () => {
   return (
     <>
-      <Header />
-      {/* <Navbar/> */}
-      <Pages />
-    </>
-  );
+     <Pages/>
+     </>
+  )
 }
 
-export default App;
+export default App
+
+
